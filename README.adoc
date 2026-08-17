@@ -12,8 +12,7 @@ an extra stage that functions as bypass for the
 register file. The design does not use branch
 prediction.
 
-All programs for the 3-stage processor also run on the
-5-stage processor.
+All programs for the https://github.com/jesseopdenbrouw/thuas-riscv[3-stage processor] also run on the 5-stage processor.
 
 Preliminary metrics (no boot, all I/O except UART2):
 
