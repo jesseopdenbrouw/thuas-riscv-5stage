@@ -1,5 +1,7 @@
 = The THUAS RISC-V 5-stage pipelined processor
 
+*preliminary *
+
 This is a classic 5-stage pipelined processor.
 
 == The core
