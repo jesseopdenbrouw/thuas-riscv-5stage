@@ -29,6 +29,11 @@ memory decoder and the generic memory module
 are adapted. All other entities are the same as
 with the 3-stage pipelined SoC (notebly the I/O).
 
+== Bootloader and On-Chip Debugger
+
+The bootloader and on-chip debugger work the same
+as with the 3-stage pipelined processor.
+
 == Notes
 
 Please note the following:
