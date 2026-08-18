@@ -2420,13 +2420,11 @@ begin
             csr_reg.mscratch <= all_zeros_c;
             csr_reg.mtval <= all_zeros_c;
             csr_reg.mie <= all_zeros_c;
---            csr_reg.mip <= all_zeros_c;
             csr_reg.mcause <= all_zeros_c;
             csr_reg.mstatus <= all_zeros_c;
             control.nmi_lockout <= '0';
             csr_reg.dcsr <= (others => '0');
             csr_reg.dpc <= (others => '0');
-            csr_reg.tselect <= (others => '0');
             csr_reg.tdata1 <= (others => '0');
             csr_reg.tdata2 <= (others => '0');
         elsif rising_edge(I_clk) then
@@ -2441,13 +2439,11 @@ begin
                 csr_reg.mscratch <= all_zeros_c;
                 csr_reg.mtval <= all_zeros_c;
                 csr_reg.mie <= all_zeros_c;
---                csr_reg.mip <= all_zeros_c;
                 csr_reg.mcause <= all_zeros_c;
                 csr_reg.mstatus <= all_zeros_c;
                 control.nmi_lockout <= '0';
                 csr_reg.dcsr <= (others => '0');
                 csr_reg.dpc <= (others => '0');
-                csr_reg.tselect <= (others => '0');
                 csr_reg.tdata1 <= (others => '0');
                 csr_reg.tdata2 <= (others => '0');
             else
@@ -2525,157 +2521,159 @@ begin
                     
                 end if;
 
+                -- Set the cause for halting in DCSR
+                -- cause(3) is load flag
+                if csr_reg.dcsr_cause(3) = '1' and HAVE_OCD then
+                    csr_reg.dcsr(8 downto 6) <= csr_reg.dcsr_cause(2 downto 0);
+                    if csr_reg.dcsr_cause(2 downto 0) = "010" then
+                        csr_reg.tdata1(22) <= '1';  -- hit0
+                    end if;
+                end if;
+                -- If a halt/break/step, load DPC with PC
+                if control.load_dpc = '1' and HAVE_OCD then
+                    csr_reg.dpc <= id_ex.pc;
+                end if;
+
+                -- When we're in debug mode ...
+                if control.stall_on_debug = '1' and I_dm_core_data_request.writecsr = '1' and HAVE_OCD then
+                    case csr_addr_v is
+                        when mcycle_addr => csr_reg.mcycle <= I_dm_core_data_request.data;
+                        when mcycleh_addr => csr_reg.mcycleh <= I_dm_core_data_request.data;
+                        when minstret_addr => csr_reg.minstret <= I_dm_core_data_request.data;
+                        when minstreth_addr => csr_reg.minstreth <= I_dm_core_data_request.data;
+                        when mstatus_addr => csr_reg.mstatus <= I_dm_core_data_request.data;
+                        when mie_addr => csr_reg.mie <= I_dm_core_data_request.data;
+                        when mtvec_addr => csr_reg.mtvec <= I_dm_core_data_request.data;
+                        when mcountinhibit_addr => csr_reg.mcountinhibit <= I_dm_core_data_request.data;
+                        when mscratch_addr => csr_reg.mscratch <= I_dm_core_data_request.data;
+                        when mepc_addr => csr_reg.mepc <= I_dm_core_data_request.data;
+                        when mcause_addr => csr_reg.mcause <= I_dm_core_data_request.data;
+                        when mtval_addr => csr_reg.mtval <= I_dm_core_data_request.data;
+                        when dcsr_addr => csr_reg.dcsr <= I_dm_core_data_request.data;
+                        when dpc_addr => csr_reg.dpc <= I_dm_core_data_request.data;
+                        when tdata1_addr => csr_reg.tdata1 <= I_dm_core_data_request.data;
+                        when tdata2_addr => csr_reg.tdata2 <= I_dm_core_data_request.data;
+                        when others => null;
+                    end case;
+                end if;
+                
+                -- Zero out unused bits
+                csr_reg.mcountinhibit(31 downto 3) <= (others => '0');
+                csr_reg.mcountinhibit(1) <= '0';
+
+                -- Set all bits hard to 0 except MTIE (7), MSIE (3)
+                csr_reg.mie(csr_reg.mie'left downto 8) <= (others => '0');
+                csr_reg.mie(6 downto 4) <= (others => '0');
+                csr_reg.mie(2 downto 0) <= (others => '0');
+                
+                -- MCAUSE doesn't use that many bits...
+                -- Only Interrupt Bit and 5 LSB are needed
+                csr_reg.mcause(30 downto 5) <= (others => '0');
+
+                -- Set most bits of mstatus to 0
+                csr_reg.mstatus(csr_reg.mstatus'left downto 13) <= (others => '0');
+                csr_reg.mstatus(10 downto 8) <= (others => '0');
+                csr_reg.mstatus(4 downto 4) <= (others => '0');
+                csr_reg.mstatus(2 downto 0) <= (others => '0');
+                
+                if HAVE_OCD then
+                    -- Debug registers
+                    csr_reg.dcsr(1 downto 0) <= "11";                -- Alwyas M-mode
+                    csr_reg.dcsr(3) <= '0';                          -- NMI interrupt pending not used
+                    csr_reg.dcsr(4) <= '0';                          -- mpriven not used
+                    csr_reg.dcsr(5) <= '0';                          -- v not used
+                    csr_reg.dcsr(9) <= '0';                          -- stoptime not used
+                    csr_reg.dcsr(10) <= '0';                         -- stopcount not used
+                    csr_reg.dcsr(11) <= '0';                         -- stepie not used
+                    csr_reg.dcsr(12) <= '0';                         -- ebreaku not used
+                    csr_reg.dcsr(13) <= '0';                         -- ebreaks not used
+                    csr_reg.dcsr(14) <= '0';                         -- reserved
+                    csr_reg.dcsr(16) <= '0';                         -- ebreakvu not used
+                    csr_reg.dcsr(17) <= '0';                         -- ebreakvs not used
+                    csr_reg.dcsr(27 downto 18) <= (others => '0');   -- reserved
+                    csr_reg.dcsr(31 downto 28) <= "0100";            -- version 1.0
+
+                    csr_reg.tdata1(31 downto 28) <= x"6";            -- always type 6 (mcontrol6)
+                    csr_reg.tdata1(27) <= '0';                       -- 0
+                    csr_reg.tdata1(26) <= '0';                       -- uncertain
+                    csr_reg.tdata1(25) <= '0';                       -- hit1 = 0
+                    csr_reg.tdata1(24) <= '0';                       -- vs
+                    csr_reg.tdata1(23) <= '0';                       -- vu
+                    csr_reg.tdata1(20) <= '0';                       -- 0
+                    csr_reg.tdata1(19) <= '0';                       -- 0
+                    csr_reg.tdata1(11) <= '0';                       -- chain
+                    csr_reg.tdata1(5) <= '0';                        -- uncertainen
+                    csr_reg.tdata1(4) <= '0';                        -- S mode
+                    csr_reg.tdata1(3) <= '0';                        -- U mode
+                    csr_reg.tdata1(1) <= '0';                        -- no store
+                    csr_reg.tdata1(0) <= '0';                        -- no load
+
+                    csr_reg.dpc(0) <= '0';                           -- LSB always 0
+                else
+                    csr_reg.dcsr <= (others => '0');
+                    csr_reg.dpc <= (others => '0');
+                    csr_reg.tdata1 <= (others => '0');
+                    csr_reg.tdata2 <= (others => '0');
+                end if;
+
+                -- Interrupt handling takes priority over possible user
+                -- update of the CSRs.
+                -- The LIC checks if exceptions/interrupts are enabled.
+                if control.trap_request = '1' and control.stall_on_debug = '0' then
+                    -- Copy mie to mpie
+                    csr_reg.mstatus(7) <= csr_reg.mstatus(3);
+                    -- Set M mode
+                    csr_reg.mstatus(12 downto 11) <= "11";
+                    -- Disable interrupts
+                    csr_reg.mstatus(3) <= '0';
+                    -- Copy mcause
+                    csr_reg.mcause <= control.trap_mcause;
+                    -- Save PC at the point of interrupt, note that a
+                    -- memory fault occurs when the memory operation
+                    -- is in the EX_MEM stage, so we must get the PC
+                    -- of that memory operation. Otherwise the fault
+                    -- occurs is the ID_EX stage.
+                    if control.trap_memfault = '1' then
+                        csr_reg.mepc <= ex_mem.pc;
+                    else
+                        csr_reg.mepc <= id_ex.pc;
+                    end if;
+                    -- Set MTVAL, see priv ISA, S.2.1.1.16
+                    if control.trap_mcause = x"00000000" then
+                        -- Instruction misaligned fault, set MTVAL to all zeros
+                        csr_reg.mtval <= (others => '0');
+                    elsif control.trap_mcause = x"00000001" then
+                        -- Instruction access fault, set MTVAL to all zeros
+                        csr_reg.mtval <= (others => '0');
+                    elsif control.trap_mcause = x"00000002" then
+                        -- Illegal instruction fault, set MTVAL to all zeros
+                        csr_reg.mtval <= (others => '0');
+                    elsif control.trap_mcause = x"00000003" then
+                        -- Breakpoint, set MTVAL to all zeros
+                        csr_reg.mtval <= (others => '0');
+                    else
+                        -- Latch address from address bus
+                        csr_reg.mtval <= csr_transfer.address_to_mtval;
+                    end if;
+                    -- Lock out further NMI interrupts
+                    if I_intrio(31) = '1' then
+                        control.nmi_lockout <= '1';
+                    end if;
+                elsif control.trap_release = '1' then
+                    -- Copy mpie to mie
+                    csr_reg.mstatus(3) <= csr_reg.mstatus(7);
+                    -- ??
+                    csr_reg.mstatus(7) <= '1';
+                    -- Keep M mode
+                    csr_reg.mstatus(12 downto 11) <= "11";
+                 -- Enable further NMI interrupts
+                    control.nmi_lockout <= '0';
+                end if;
+                
             end if; -- sreset
             
-            -- Set the cause for halting in DCSR
-            -- cause(3) is load flag
-            if csr_reg.dcsr_cause(3) = '1' and HAVE_OCD then
-                csr_reg.dcsr(8 downto 6) <= csr_reg.dcsr_cause(2 downto 0);
-                if csr_reg.dcsr_cause(2 downto 0) = "010" then
-                    csr_reg.tdata1(22) <= '1';  -- hit0
-                end if;
-            end if;
-            -- If a halt/break/step, load DPC with PC
-            if control.load_dpc = '1' and HAVE_OCD then
-                csr_reg.dpc <= id_ex.pc;
-            end if;
-
-            -- When we're in debug mode ...
-            if control.stall_on_debug = '1' and I_dm_core_data_request.writecsr = '1' and HAVE_OCD then
-                case csr_addr_v is
-                    when mcycle_addr => csr_reg.mcycle <= I_dm_core_data_request.data;
-                    when mcycleh_addr => csr_reg.mcycleh <= I_dm_core_data_request.data;
-                    when minstret_addr => csr_reg.minstret <= I_dm_core_data_request.data;
-                    when minstreth_addr => csr_reg.minstreth <= I_dm_core_data_request.data;
-                    when mstatus_addr => csr_reg.mstatus <= I_dm_core_data_request.data;
-                    when mie_addr => csr_reg.mie <= I_dm_core_data_request.data;
-                    when mtvec_addr => csr_reg.mtvec <= I_dm_core_data_request.data;
-                    when mcountinhibit_addr => csr_reg.mcountinhibit <= I_dm_core_data_request.data;
-                    when mscratch_addr => csr_reg.mscratch <= I_dm_core_data_request.data;
-                    when mepc_addr => csr_reg.mepc <= I_dm_core_data_request.data;
-                    when mcause_addr => csr_reg.mcause <= I_dm_core_data_request.data;
-                    when mtval_addr => csr_reg.mtval <= I_dm_core_data_request.data;
-                    when dcsr_addr => csr_reg.dcsr <= I_dm_core_data_request.data;
-                    when dpc_addr => csr_reg.dpc <= I_dm_core_data_request.data;
-                    when tdata1_addr => csr_reg.tdata1 <= I_dm_core_data_request.data;
-                    when tdata2_addr => csr_reg.tdata2 <= I_dm_core_data_request.data;
-                    when others => null;
-                end case;
-            end if;
-            
-            -- Zero out unused bits
-            csr_reg.mcountinhibit(31 downto 3) <= (others => '0');
-            csr_reg.mcountinhibit(1) <= '0';
-
-            -- Set all bits hard to 0 except MTIE (7), MSIE (3)
-            csr_reg.mie(csr_reg.mie'left downto 8) <= (others => '0');
-            csr_reg.mie(6 downto 4) <= (others => '0');
-            csr_reg.mie(2 downto 0) <= (others => '0');
-            
-            -- MCAUSE doesn't use that many bits...
-            -- Only Interrupt Bit and 5 LSB are needed
-            csr_reg.mcause(30 downto 5) <= (others => '0');
-
-            -- Set most bits of mstatus to 0
-            csr_reg.mstatus(csr_reg.mstatus'left downto 13) <= (others => '0');
-            csr_reg.mstatus(10 downto 8) <= (others => '0');
-            csr_reg.mstatus(4 downto 4) <= (others => '0');
-            csr_reg.mstatus(2 downto 0) <= (others => '0');
-            
-            if HAVE_OCD then
-                -- Debug registers
-                csr_reg.dcsr(1 downto 0) <= "11";                -- Alwyas M-mode
-                csr_reg.dcsr(3) <= '0';                          -- NMI interrupt pending not used
-                csr_reg.dcsr(4) <= '0';                          -- mpriven not used
-                csr_reg.dcsr(5) <= '0';                          -- v not used
-                csr_reg.dcsr(9) <= '0';                          -- stoptime not used
-                csr_reg.dcsr(10) <= '0';                         -- stopcount not used
-                csr_reg.dcsr(11) <= '0';                         -- stepie not used
-                csr_reg.dcsr(12) <= '0';                         -- ebreaku not used
-                csr_reg.dcsr(13) <= '0';                         -- ebreaks not used
-                csr_reg.dcsr(14) <= '0';                         -- reserved
-                csr_reg.dcsr(16) <= '0';                         -- ebreakvu not used
-                csr_reg.dcsr(17) <= '0';                         -- ebreakvs not used
-                csr_reg.dcsr(27 downto 18) <= (others => '0');   -- reserved
-                csr_reg.dcsr(31 downto 28) <= "0100";            -- version 1.0
-
-                csr_reg.tdata1(31 downto 28) <= x"6";            -- always type 6 (mcontrol6)
-                csr_reg.tdata1(26) <= '0';                       -- uncertain
-                csr_reg.tdata1(25) <= '0';                       -- hit1 = 0
-                csr_reg.tdata1(24) <= '0';                       -- vs
-                csr_reg.tdata1(23) <= '0';                       -- vu
-                csr_reg.tdata1(20) <= '0';                       -- 0
-                csr_reg.tdata1(19) <= '0';                       -- 0
-                csr_reg.tdata1(5) <= '0';                        -- uncertainen
-                csr_reg.tdata1(4) <= '0';                        -- S mode
-                csr_reg.tdata1(3) <= '0';                        -- U mode
-                csr_reg.tdata1(1) <= '0';                        -- no store
-                csr_reg.tdata1(0) <= '0';                        -- no load
-                csr_reg.dpc(0) <= '0';                           -- LSB always 0
-                csr_reg.tselect <= (others => '0');              -- Only 1 hw breakpoint
-            else
-                csr_reg.dcsr <= (others => '0');
-                csr_reg.dpc <= (others => '0');
-                csr_reg.tdata1 <= (others => '0');
-                csr_reg.tdata2 <= (others => '0');
-                csr_reg.tselect <= (others => '0');
-            end if;
-
-            -- Interrupt handling takes priority over possible user
-            -- update of the CSRs.
-            -- The LIC checks if exceptions/interrupts are enabled.
-            if control.trap_request = '1' and control.stall_on_debug = '0' then
-                -- Copy mie to mpie
-                csr_reg.mstatus(7) <= csr_reg.mstatus(3);
-                -- Set M mode
-                csr_reg.mstatus(12 downto 11) <= "11";
-                -- Disable interrupts
-                csr_reg.mstatus(3) <= '0';
-                -- Copy mcause
-                csr_reg.mcause <= control.trap_mcause;
-                -- Save PC at the point of interrupt, note that a
-                -- memory fault occurs when the memory operation
-                -- is in the EX_MEM stage, so we must get the PC
-                -- of that memory operation. Otherwise the fault
-                -- occurs is the ID_EX stage.
-                if control.trap_memfault = '1' then
-                    csr_reg.mepc <= ex_mem.pc;
-                else
-                    csr_reg.mepc <= id_ex.pc;
-                end if;
-                -- Set MTVAL, see priv ISA, S.2.1.1.16
-                if control.trap_mcause = x"00000000" then
-                    -- Instruction misaligned fault, set MTVAL to all zeros
-                    csr_reg.mtval <= (others => '0');
-                elsif control.trap_mcause = x"00000001" then
-                    -- Instruction access fault, set MTVAL to all zeros
-                    csr_reg.mtval <= (others => '0');
-                elsif control.trap_mcause = x"00000002" then
-                    -- Illegal instruction fault, set MTVAL to all zeros
-                    csr_reg.mtval <= (others => '0');
-                elsif control.trap_mcause = x"00000003" then
-                    -- Breakpoint, set MTVAL to all zeros
-                    csr_reg.mtval <= (others => '0');
-                else
-                    -- Latch address from address bus
-                    csr_reg.mtval <= csr_transfer.address_to_mtval;
-                end if;
-                -- Lock out further NMI interrupts
-                if I_intrio(31) = '1' then
-                    control.nmi_lockout <= '1';
-                end if;
-            elsif control.trap_release = '1' then
-                -- Copy mpie to mie
-                csr_reg.mstatus(3) <= csr_reg.mstatus(7);
-                -- ??
-                csr_reg.mstatus(7) <= '1';
-                -- Keep M mode
-                csr_reg.mstatus(12 downto 11) <= "11";
-             -- Enable further NMI interrupts
-                control.nmi_lockout <= '0';
-            end if;
-            
         end if; -- rising_edge
+
         -- Calculate the MTVEC to be loaded in the PC on trap
         if VECTORED_MTVEC and csr_reg.mtvec(0) = '1' and csr_reg.mcause(31) = '1' then
             csr_transfer.mtvec_to_pc <= std_logic_vector(unsigned(csr_reg.mtvec(csr_reg.mtvec'left downto 2)) + unsigned(csr_reg.mcause(5 downto 0))) & "00";
@@ -2683,7 +2681,7 @@ begin
             csr_transfer.mtvec_to_pc <= csr_reg.mtvec(csr_reg.mtvec'left downto 2) & "00";
         end if;
 
-        -- Lowest two bits of mepc always 0, see priv ISA, S.2.1.1.14
+        -- Lowest two bits of mepc always 0, see priv ISA, S.3.1.14
         csr_reg.mepc(1 downto 0) <= "00";
 
     end process;
@@ -2749,6 +2747,9 @@ begin
 
     -- Debug tinfo
     csr_reg.tinfo <= x"01000040" when HAVE_OCD else (others => '0'); -- v1, only mcontrol6
+
+    -- Only 1 hw breakpoint
+    csr_reg.tselect <= (others => '0');
 
 
 

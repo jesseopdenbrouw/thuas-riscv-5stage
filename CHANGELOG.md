@@ -14,4 +14,5 @@ All dates are in dd.mm.yyyy format.
 | Date       | Version  | Comment | Issue |
 |:----------:|:--------:|:--------|:-----:|
 | 17-08-2026 | 2.0.0.0  | First commit of 5-stage pipelined SoC | |
+| 18-08-2026 | 2.0.0.1  | [core] fix vectored imterrupt calculation | |
 
