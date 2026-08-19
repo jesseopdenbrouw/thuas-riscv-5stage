@@ -10,7 +10,7 @@ the altsyncram, because of limitations of the synthesizer.
 
 ## How to use
 
-* Copy `mem_altera-5stage.vhd` over `mem.vhd` in the `rtl` directory.
+* Copy `mem_altera_5stage.vhd` over `mem.vhd` in the `rtl` directory.
 * Copy `rom_image.mif` to the `rtl` directory.
 * Copy `bootrom_image.mif` to the `rtl` directory.
 * In the `rtl` directory, update the file `riscv.vhd` to use the MIF files. Look at the point of instantiation and update the generic `MEMORY_FILE` accordingly.
