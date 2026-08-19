@@ -42,7 +42,7 @@ use work.processor_common.all;
 
 package ram_image is
 
-    -- Use a little trick to create an empty RAM image
+    -- Use a little trick to create an empty RAM image.
     -- The range is deliberately 1 to 0 so that the effective
     -- range is empty (NULL). A constant must have an
     -- initializer, but there are no elements. The 'others'
