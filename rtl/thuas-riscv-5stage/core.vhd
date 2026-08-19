@@ -329,14 +329,13 @@ type control_type is record
     nmi_lockout : std_logic;
     mret_request_delay : std_logic;
     -- Debug related
---    indebug : std_logic;
-    step : std_logic;
-    bpmatch : std_logic;
     stall_on_debug : std_logic;
     indebug : std_logic;
     load_pc : std_logic;
     load_dpc : std_logic;
     skip_match : std_logic;
+    bpmatch : std_logic;
+    step : std_logic;
     isstepping : std_logic;
 end record control_type;
 signal control : control_type;
@@ -451,7 +450,6 @@ begin
             else
                 control.load_pc <= '0';
                 control.load_dpc <= '0';
---                csr_reg.dcsr_cause <= "0000";
                 if I_ackhavereset = '1' then
                     O_reset_ack <= '0';
                 end if;
@@ -477,15 +475,13 @@ begin
                         
                         -- If user halt request...
                         if I_halt_req = '1' and HAVE_OCD then
-                            O_halt_ack <= '1';                  -- Signal halt
-                            control.step <= '0';                --
+--                            control.step <= '0';                --
                             control.state <= state_debugpre1;   -- Goto to debug state
                             control.load_dpc <= '1';            -- Load DPC with PC
                             csr_reg.dcsr_cause <= "1011";       -- Signal halt to user
                         -- If hardware breakpoint and not resuming from this breakpoint...
                         elsif control.bpmatch = '1' and control.skip_match = '0' and HAVE_OCD then
-                            O_halt_ack <= '1';                  -- Signal halt
-                            control.step <= '0';                --
+--                            control.step <= '0';                --
                             control.state <= state_debugpre1;   -- Goto debug state
                             control.load_dpc <= '1';            -- Load DPC with PC
                             csr_reg.dcsr_cause <= "1010";       -- Signal HW break to user
@@ -493,15 +489,13 @@ begin
                         -- Can be switched off with: <targetname> riscv set_ebreakm off
                         -- dcsr(15) is dcsr.ebreakm bit
                         elsif control.ebreak_request = '1' and csr_reg.dcsr(15) = '1' and HAVE_OCD then
-                            O_halt_ack <= '1';                  -- Signal halt
-                            control.step <= '0';                --
+--                            control.step <= '0';                --
                             control.state <= state_debugpre1;   -- Goto debug state
                             control.load_dpc <= '1';            -- Load DPC with PC
                             csr_reg.dcsr_cause <= "1001";       -- Signal EBREAK to user
                         -- If we are stapping and not resuming from this breakpoint...
                         elsif control.isstepping = '1' and control.step = '0' and HAVE_OCD then
-                            O_halt_ack <= '1';                  -- Signal halt
-                            control.step <= '0';
+--                            control.step <= '0';
                             control.state <= state_debugpre1;   -- Goto debug state
                             control.load_dpc <= '1';            -- Load DPC with PC
                             csr_reg.dcsr_cause <= "1100";       -- Signal STEP to user
@@ -554,7 +548,6 @@ begin
                     when state_wfi =>
                         -- A halt request on WFI goes to debug state
                         if I_halt_req = '1' and HAVE_OCD then
-                            O_halt_ack <= '1';                  -- Signal halt
                             control.step <= '0';                --
                             control.state <= state_debugpre1;   -- Goto to debug state
                             control.load_dpc <= '1';            -- Load DPC with PC
@@ -567,6 +560,7 @@ begin
                     when state_debugpre1 =>
                         control.state <= state_debugpre2;
                     when state_debugpre2 =>
+                        O_halt_ack <= '1';
                         control.state <= state_debug;
                     -- When we're in debug...
                     when state_debug =>
@@ -649,8 +643,8 @@ begin
     -- Update the instret CSR counter
     control.instret <= mem_wb.valid;
 
-    -- May the core be interrupted (only for interrupts, not exceptions)?
-    control.may_interrupt <= '1' when control.state = state_exec or control.state = state_wfi else '0';
+    -- May the core be interrupted (only for interrupts, not exceptions), but not during stepping?
+    control.may_interrupt <= '1' when (control.state = state_exec or control.state = state_wfi) and control.isstepping = '0' else '0';
     
     -- Check if the currently executing instruction address is aligned to word
     -- We need to make a one-shot, because the PC is incremented by 4 each clock
@@ -2607,7 +2601,7 @@ begin
                     csr_reg.tdata1(1) <= '0';                        -- no store
                     csr_reg.tdata1(0) <= '0';                        -- no load
 
-                    csr_reg.dpc(0) <= '0';                           -- LSB always 0
+                    csr_reg.dpc(1 downto 0) <= "00";                 -- LSB always 0, since IALIGN = 32
                 else
                     csr_reg.dcsr <= (others => '0');
                     csr_reg.dpc <= (others => '0');
@@ -2680,7 +2674,7 @@ begin
             csr_transfer.mtvec_to_pc <= csr_reg.mtvec(csr_reg.mtvec'left downto 2) & "00";
         end if;
 
-        -- Lowest two bits of mepc always 0, see priv ISA, S.3.1.14
+        -- Lowest two bits of mepc always 0, see priv ISA, S.2.1.1.14
         csr_reg.mepc(1 downto 0) <= "00";
 
     end process;

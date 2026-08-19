@@ -15,4 +15,5 @@ All dates are in dd.mm.yyyy format.
 |:----------:|:--------:|:--------|:-----:|
 | 17-08-2026 | 2.0.0.0  | First commit of 5-stage pipelined SoC | |
 | 18-08-2026 | 2.0.0.1  | [core] fix vectored imterrupt calculation | |
+| 20-08-2026 | 2.0.0.2  | [core] interrupts only acknowledged when not stepping, halt ack only when in debug state | |
 
