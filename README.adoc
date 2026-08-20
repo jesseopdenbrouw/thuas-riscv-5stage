@@ -16,18 +16,20 @@ All programs for the https://github.com/jesseopdenbrouw/thuas-riscv[3-stage proc
 
 Instruction execution times:
 
-* Load: 1 or 2 clocks
+* Load: 1 clock (normal) or 2 clocks (use-after-load)
 * Store: 1 clock
 * Branch taken: 3 clocks
 * Branch not taken: 1 clock
 * Jumps: 3 clocks
 * Multiplication: 3 clocks
 * Division: 34 clocks
+* ECALL, EBREAK: 4 clocks
 * CSR: 1 clock
 * All other instructions: 1 clock
 
-An trap taken takes 4 clocks, a return from the handler takes 3 clocks.
+An trap taken takes 4 clocks, a return from the handler takes 3 clocks. Note that multi-cycle operations cannot be interrupted.
 
+When the on-chip debugger is used, the halt state is typically reached in 3 clocks. A resume from halt takes 4 clocks.
 
 == Other entities
 
