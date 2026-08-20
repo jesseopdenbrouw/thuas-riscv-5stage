@@ -2,26 +2,32 @@
 
 *preliminary*
 
-This is a classic 5-stage pipelined processor.
+This is an implementation of the THUAS RISC-V RV32IM SoC using a classic 5-stage pipelined core. The core implements the 32-bit integer (I) and multiplication/division (M) extensions, the Zicsr and Zicntr extensions, and optionally the Zba en Zbs extensions. The SoC can be equipped with a bootloader to upload programs to memory and/or an on-chip debugger to debug the SoC using the JTAG protocol. The on-chip debugger works with OpenOCD, GDB and Eclipse-CDT.
+
+All instructions from the "The RISC-V Instruction Set Manual Volume I, Unprivileged Architecture, Version 20260120", RV32, are supported, so including `ecall` and `ebreak`.  From the "The RISC-V Instruction Set Manual: Volume II Privileged Architecture, Version 20260120", RV32, `mret` and `wfi` are supported. The microcontroller supports Machine mode only. Traps (interrupts and exceptions) are supported.
+
+Current Coremark testbench shows a CPI of 1.38 and a score of 2.46 coremarks/MHz (GCC 16.1, -O3). The SoC is developed on a Altera https://www.intel.com/content/www/us/en/products/details/fpga/cyclone/v.html[Cyclone V FPGA] using the Terasic https://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&No=921[DE0-CV board]. The current $f_{max}$ is 70+ MHz (standard setting) and 80+ MHz (performance aggressive).
 
 == The core
 
-The core is build around a classic 5-stage pipeline:
-IF, ID, EX, MEM and WB. Because not all block RAM
-memories give new data when read register is equal
-to write register (so not write-through) there is
-an extra stage that functions as bypass for the
-register file. The design does not use branch
-prediction.
+The core is build around a classic 5-stage pipeline: IF, ID, EX, MEM and WB. Because not all block RAM memories give new data when read register is equal to write register (so not write-through) there is an extra stage that functions as bypass for the register file. The design does not use branch prediction.
 
 All programs for the https://github.com/jesseopdenbrouw/thuas-riscv[3-stage processor] also run on the 5-stage processor.
 
-Preliminary metrics (no boot, all I/O except UART2):
+Instruction execution times:
 
-* Fmax = 70 MHz (standard setting)
-* Fmax = 80 MHz (performance aggressive)
-* Coremark/MHz = 2.46 (GCC 16.1, -O3)
-* Coremark CPI = 1.38 (GCC 16.1, -O3)
+* Load: 1 or 2 clocks
+* Store: 1 clock
+* Branch taken: 3 clocks
+* Branch not taken: 1 clock
+* Jumps: 3 clocks
+* Multiplication: 3 clocks
+* Division: 34 clocks
+* CSR: 1 clock
+* All other instructions: 1 clock
+
+An trap taken takes 4 clocks, a return from the handler takes 3 clocks.
+
 
 == Other entities
 
