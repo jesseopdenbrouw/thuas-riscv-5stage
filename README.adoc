@@ -49,9 +49,9 @@ as with the 3-stage pipelined processor.
 Please note the following:
 
 * The `FAST_MEM` generic is not implemented. Memory latency is one cycle for stores and one or two cycles for loads.
-* The `BUFFER_IO_RESPONSE` generic is not implemented. The extra cycle delay is not compatible with memory acces sequence.
+* The `BUFFER_IO_RESPONSE` generic is not implemented. The extra cycle delay is not compatible with the memory access sequence.
 * The `HAVE_REGISTERS_IN_RAM` generic is not implemented. The registers are always implemented with onboard RAM.
-* The `FAST_DIVIDE` generic is not implemented. Integer divisions are rare in software programs so there is no real benifit.
+* The `FAST_DIVIDE` generic is not implemented. Integer divisions are rare in software programs so there is no real benefit.
 * The `HAVE_ZBB` generic is not implemented.
 * The `HAVE_ZBKB` generic is not implemented.
 * The `HAVE_ZIMOP` generic is not implemented
