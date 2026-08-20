@@ -1496,7 +1496,7 @@ begin
             -- Write register if Rd has valid data
             if control.indebug = '0' and mem_wb.rd_en = '1' then
                 regs_rs1(rd_v) <= mem_wb.rddata;
-            -- Write via debuggger
+            -- Write via debugger
             elsif control.stall_on_debug = '1' and I_dm_core_data_request.writegpr = '1' and rd_v /= 0 then
                 regs_rs1(rd_v) <= I_dm_core_data_request.data;
             end if;
@@ -1519,7 +1519,7 @@ begin
             -- Write register if Rd has valid data
             if control.indebug = '0' and mem_wb.rd_en = '1' then
                 regs_rs2(rd_v) <= mem_wb.rddata;
-            -- Write via debuggger
+            -- Write via debugger
             elsif control.stall_on_debug = '1' and I_dm_core_data_request.writegpr = '1' and rd_v /= 0 then
                 regs_rs2(rd_v) <= I_dm_core_data_request.data;
             end if;
@@ -1545,7 +1545,7 @@ begin
                 -- Write register if Rd has valid data
                 if control.indebug = '0' and mem_wb.rd_en = '1' then
                     regs_dbg(rd_v) <= mem_wb.rddata;
-                -- Write via debuggger
+                -- Write via debugger
                 elsif control.stall_on_debug = '1' and I_dm_core_data_request.writegpr = '1' and rd_v /= 0 then
                     regs_dbg(rd_v) <= I_dm_core_data_request.data;
                 end if;
