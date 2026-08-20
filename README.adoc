@@ -1,10 +1,10 @@
-= The THUAS RISC-V 5-stage pipelined processor
+= The THUAS RISC-V 5-stage pipelined System-on-a-Chip
 
 *preliminary*
 
 This is an implementation of the THUAS RISC-V RV32IM SoC using a classic 5-stage pipelined core. The core implements the 32-bit integer (I) and multiplication/division (M) extensions, the Zicsr and Zicntr extensions, and optionally the Zba en Zbs extensions. The SoC can be equipped with a bootloader to upload programs to memory and/or an on-chip debugger to debug the SoC using the JTAG protocol. The on-chip debugger works with OpenOCD, GDB and Eclipse-CDT.
 
-All instructions from the "The RISC-V Instruction Set Manual Volume I, Unprivileged Architecture, Version 20260120", RV32I, are supported, so including `fence` and `hint` which act as no-ops, and `ecall` and `ebreak`.  From the "The RISC-V Instruction Set Manual: Volume II Privileged Architecture, Version 20260120", Machine-Level ISA, Version 1.13, `mret` and `wfi` are supported. The microcontroller supports Machine mode only. Traps (interrupts and exceptions) are supported.
+All instructions from the "The RISC-V Instruction Set Manual Volume I, Unprivileged Architecture, Version 20260120", RV32I, are supported, so including `fence` and `hint` which act as no-ops, and `ecall` and `ebreak`.  Also, the RV32M instructions are supported. From the "The RISC-V Instruction Set Manual: Volume II Privileged Architecture, Version 20260120", Machine-Level ISA, Version 1.13, `mret` and `wfi` are supported. The microcontroller supports Machine mode only. Traps (interrupts and exceptions) are supported.
 
 Current Coremark testbench shows a CPI of 1.38 and a score of 2.46 coremarks/MHz (GCC 16.1, -O3). The SoC is developed on a Altera https://www.intel.com/content/www/us/en/products/details/fpga/cyclone/v.html[Cyclone V FPGA] using the Terasic https://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&No=921[DE0-CV board]. The current $f_{max}$ is 70+ MHz (standard setting) and 80+ MHz (performance aggressive).
 
@@ -33,10 +33,11 @@ When the on-chip debugger is used, the halt state is typically reached in 3 cloc
 
 == Other entities
 
-Besides the core, also the IO decoder, the
+Besides the core, also the riscv top-level, the IO decoder, the
 memory decoder and the generic memory module
 are adapted. All other entities are the same as
 with the 3-stage pipelined SoC (notebly the I/O).
+We will start harmonizing these modules with the 3-stage pipelined SoC.
 
 == Bootloader and On-Chip Debugger
 
@@ -48,9 +49,9 @@ as with the 3-stage pipelined processor.
 Please note the following:
 
 * The `FAST_MEM` generic is not implemented. Memory latency is one cycle for stores and one or two cycles for loads.
-* The `BUFFER_IO_RESPONSE` generic is not implemented.
+* The `BUFFER_IO_RESPONSE` generic is not implemented. The extra cycle delay is not compatible with memory acces sequence.
 * The `HAVE_REGISTERS_IN_RAM` generic is not implemented. The registers are always implemented with onboard RAM.
-* The `FAST_DIVIDE` generic is not implemented.
+* The `FAST_DIVIDE` generic is not implemented. Integer divisions are rare in software programs so there is no real benifit.
 * The `HAVE_ZBB` generic is not implemented.
 * The `HAVE_ZBKB` generic is not implemented.
 * The `HAVE_ZIMOP` generic is not implemented
