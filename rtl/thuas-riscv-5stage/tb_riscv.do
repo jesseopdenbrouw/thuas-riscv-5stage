@@ -245,6 +245,7 @@ if {[find signal */debuggen/dtm0/state] != ""} {
     add wave -divider "Core <=> DM"
     add wave            -label I_dm_core_data_request dut/core0/I_dm_core_data_request
     add wave            -label O_dm_core_data_response dut/core0/O_dm_core_data_response
+    add wave            -label halt_ack dut/core0/O_halt_ack
     after 1000
 }
 
