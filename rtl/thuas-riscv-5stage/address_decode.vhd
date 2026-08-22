@@ -203,13 +203,16 @@ begin
     -- Select data from load
     process (sel_mem, I_mem_response_rom, I_mem_response_boot, I_mem_response_ram, I_mem_response_io) is
     begin
+        -- This case is not according to VHDL semantics because the choices are not locally static.
+        -- Compiling with nvc results in an error.
         case sel_mem is
-            when ROM_HIGH_NIBBLE =>  O_bus_response.data <= I_mem_response_rom.data;
+            when ROM_HIGH_NIBBLE  => O_bus_response.data <= I_mem_response_rom.data;
             when BOOT_HIGH_NIBBLE => O_bus_response.data <= I_mem_response_boot.data;
-            when RAM_HIGH_NIBBLE =>  O_bus_response.data <= I_mem_response_ram.data;
-            when IO_HIGH_NIBBLE  =>  O_bus_response.data <= I_mem_response_io.data;
-            when others          =>  O_bus_response.data <= (others => '-');
+            when RAM_HIGH_NIBBLE  => O_bus_response.data <= I_mem_response_ram.data;
+            when IO_HIGH_NIBBLE   => O_bus_response.data <= I_mem_response_io.data;
+            when others           => O_bus_response.data <= (others => '-');
         end case;
+
     end process;
 
     -- Fuse all readies.
