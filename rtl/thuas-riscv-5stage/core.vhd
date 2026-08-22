@@ -537,6 +537,13 @@ begin
                     when state_trap =>
                         control.state <= state_trap2;
                     when state_trap2 =>
+                        if control.isstepping = '1' then
+                            control.state <= state_trap3;
+                        else
+                            control.state <= state_exec;
+                        end if;
+                    -- Need this extra state to load the correct PC in DPC
+                    when state_trap3 =>
                         control.state <= state_exec;
                     -- First state of MRET, flushes the pipeline
                     when state_mret =>
@@ -631,6 +638,7 @@ begin
                               control.loadhazard = '1' or       -- if load hazard    <-- extra info needed
                               control.state = state_flush or    -- do to branching
                               control.state = state_debugflush or  -- leaving debug
+                              control.state = state_debugflush2 or
                               control.state = state_trap or     -- when entering trap
                               control.state = state_trap2 or    -- when entering trap
                               control.state = state_mret or     -- if returning from IH    
@@ -677,6 +685,8 @@ begin
             if I_sreset = '1' then
                 control.instr_access_error <= (others => '0');
             elsif control.state = state_trap then
+                control.instr_access_error <= (others => '0');
+            elsif control.instr_access_error(1) = '1' then
                 control.instr_access_error <= (others => '0');
             else
                 control.instr_access_error <= control.instr_access_error(0) & I_instr_response.instr_access_error;
@@ -804,7 +814,7 @@ begin
     
     
     -- Forwarding: check if we need forwarding data
-    -- Extra stage to bypass register file (WB/BY)
+    -- Extra stage to bypass register file (WB/BP)
     process (id_ex, ex_mem, mem_wb, wb_bp) is
     begin
         if id_ex.rs1 = ex_mem.rd and ex_mem.rd_en = '1' then
@@ -897,7 +907,7 @@ begin
         uses_rs1_v := true; --opcode_v /= "0110111" and opcode_v /= "0010111" and opcode_v /= "1101111" and opcode_v /= "0001111";
         uses_rs2_v := true; --opcode_v = "0110011" or opcode_v = "0100011" or opcode_v = "1100011";
         -- Check for stall
-        if id_ex.isload = '1' and ((id_ex.rd = rs1_v and uses_rs1_v) or (id_ex.rd = rs2_v and uses_rs2_v)) then
+        if id_ex.isload = '1' and id_ex.rd /= "00000" and ((id_ex.rd = rs1_v and uses_rs1_v) or (id_ex.rd = rs2_v and uses_rs2_v)) then
             control.loadhazard <= '1';
         else
             control.loadhazard <= '0';
@@ -1052,8 +1062,8 @@ begin
                     control.illegal_instruction_decode <= '0';
 
                     -- If we flush the pipeline, don't execute the instruction
-                    -- Alsu for use-after-load (load hazard)
-                    if control.flush = '1' or control.state = state_debugflush or control.state = state_debugflush2 then
+                    -- Also for use-after-load (load hazard)
+                    if control.flush = '1' then
                         -- Keep default values
                         null;
                     -- Check for only 32-bit instructions
@@ -2525,7 +2535,7 @@ begin
                 end if;
                 -- If a halt/break/step, load DPC with PC
                 if control.load_dpc = '1' and HAVE_OCD then
-                    csr_reg.dpc <= id_ex.pc;
+                    csr_reg.dpc <= ex_mem.pc;
                 end if;
 
                 -- When we're in debug mode ...
@@ -2692,7 +2702,7 @@ begin
     csr_reg.misa(31 downto 13) <= x"4000" & "000";
     csr_reg.misa(12) <= '1' when HAVE_MULDIV else '0';
     csr_reg.misa(11 downto 4) <= x"10" when NUMBER_OF_REGISTERS = 32 else x"01";
-    csr_reg.misa(3 downto 0) <= x"2" when HAVE_ZBA and HAVE_ZBB and HAVE_ZBS else x"0";
+    csr_reg.misa(3 downto 0) <= x"0"; --x"2" when HAVE_ZBA and HAVE_ZBB and HAVE_ZBS else x"0";
 
     -- Custom read-only hardware description
     csr_reg.mxhw(00) <= '1'; -- GPIOA, always present
