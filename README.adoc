@@ -32,7 +32,7 @@ An trap taken takes 4 clocks, a return from the handler takes 3 clocks. Note tha
 When the on-chip debugger is used, the halt state is typically reached in 3 clocks. A resume from halt takes 4 clocks.
 
 *Note:* you can't copy the core to the https://github.com/jesseopdenbrouw/thuas-riscv[3-stage SoC] because the memory system is different.
-`
+
 == Memory and I/O
 
 A store takes 1 clock cycle, a load must present data in the next clock cycle. The ready signal from the memory and I/O is not used, except by the debugger.
