@@ -2,7 +2,7 @@
 
 *preliminary*
 
-This is an implementation of the THUAS RISC-V RV32IM SoC using a classic 5-stage pipelined core. The core implements the 32-bit integer (I) and multiplication/division (M) extensions, the Zicsr and Zicntr extensions, and optionally the Zba en Zbs extensions. The SoC can be equipped with a bootloader to upload programs to memory and/or an on-chip debugger to debug the SoC using the JTAG protocol. The on-chip debugger works with OpenOCD, GDB and Eclipse-CDT.
+This is an implementation of the THUAS RISC-V RV32IM SoC using a classic 5-stage pipelined core. The core implements the 32-bit integer (I) and multiplication/division (M) extensions, the Zicsr and Zicntr extensions, and optionally the Zba, Zbs and Zicond extensions. The SoC can be equipped with a bootloader to upload programs to memory and/or an on-chip debugger to debug the SoC using the JTAG protocol. The on-chip debugger works with OpenOCD, GDB and Eclipse-CDT.
 
 All instructions from the "The RISC-V Instruction Set Manual Volume I, Unprivileged Architecture, Version 20260120", RV32I, are supported, so including `fence` and `hint` which act as no-ops, and `ecall` and `ebreak`.  Also, the RV32M instructions are supported. From the "The RISC-V Instruction Set Manual: Volume II Privileged Architecture, Version 20260120", Machine-Level ISA, Version 1.13, `mret` and `wfi` are supported. The microcontroller supports Machine mode only. Traps (interrupts and exceptions) are supported.
 
@@ -35,7 +35,7 @@ When the on-chip debugger is used, the halt state is typically reached in 3 cloc
 
 == Memory and I/O
 
-A store takes 1 clock cycle, a load must present data in the next clock cycle. The ready signal from the memory and I/O is not used, except by the debugger.
+A store takes 1 clock cycle, a load must present data in the next clock cycle, and typically takes 1 clock cycle, except when the successor instruction needs data from the load (use-after-load), then a load takes 2 clock cycles. The ready signal from the memory and I/O is not used, except by the debugger.
 
 == Bootloader and On-Chip Debugger
 
@@ -63,7 +63,7 @@ We will start harmonizing these modules with the 3-stage pipelined SoC.
 Please note the following:
 
 * The `FAST_MEM` generic is not implemented. Memory latency is one cycle for stores and one or two cycles for loads.
-* The `BUFFER_IO_RESPONSE` generic is not implemented. The extra cycle delay is not compatible with the memory access sequence.
+* The `BUFFER_IO_RESPONSE` generic is not implemented. The extra cycle delay is not compatible with the memory hardware.
 * The `HAVE_REGISTERS_IN_RAM` generic is not implemented. The registers are always implemented with onboard RAM.
 * The `FAST_DIVIDE` generic is not implemented. Integer divisions are rare in software programs so there is no real benefit.
 * The `HAVE_ZBB` generic is not implemented.
