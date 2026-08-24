@@ -235,6 +235,7 @@ add wave -radix hex -label CSR_reg dut/core0/csr_reg
 if {[find signal */debuggen/dtm0/state] != ""} {
     add wave -divider "DTM"
     add wave            -label DTM_state dut/debuggen/dtm0/state
+    add wave            -label tck tck
     add wave            -label tms tms
     add wave            -label tdi tdi
     add wave            -label tdo tdo
@@ -312,7 +313,7 @@ view signals
 set NumericStdNoWarnings 1
 
 # Run simulation for xx us
-run 1100 us
+run 1200 us
 
 # Fill up the waveform in the window
 wave zoom full
