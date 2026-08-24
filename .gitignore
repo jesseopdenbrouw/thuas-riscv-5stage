@@ -2,7 +2,6 @@
 docs/*.synctex.gz
 rtl/thuas-riscv-test/*
 eclipse/*
-rtl/thuas-riscv/riscv_nativelink_simulation.rpt
 rtl/thuas-riscv-5stage/db
 rtl/thuas-riscv-5stage/rtl_work
 rtl/thuas-riscv-5stage/output_files
