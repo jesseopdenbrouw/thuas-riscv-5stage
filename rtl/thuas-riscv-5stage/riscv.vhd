@@ -740,7 +740,7 @@ begin
     assert not HAVE_ZIMOP report "Zimop not implemented" severity warning;
     assert not HAVE_ZBKB report "Zbkb not implemented" severity warning;
     assert not HAVE_ZIHPM report "Zihpm performance counters not implemented" severity warning;
-    assert not HAVE_REGISTERS_IN_RAM report "HAVE_REGISTERS_IN_RAM not implemented, register always in RAM" severity warning;
+    assert not HAVE_REGISTERS_IN_RAM report "HAVE_REGISTERS_IN_RAM not implemented, registers always in RAM" severity warning;
     assert not BUFFER_IO_RESPONSE report "BUFFER_IO_RESPONSE not implemented" severity warning;
     assert SYSTEM_FREQUENCY mod CLOCK_FREQUENCY = 0 report "SYSTEM_FREQUENCY is not a integer multiple of CLOCK_FREQUENCY" severity warning;    
 
