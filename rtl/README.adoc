@@ -17,8 +17,8 @@ All programs for the 3-stage processor also run on the
 
 Preliminary metric (no boot, all I/O except UART2):
 
-* Fmax = 70 MHz (standard setting)
-* Fmax = 80 MHz (performance aggressive)
+* Fmax = 70+ MHz (standard setting)
+* Fmax = 80+ MHz (performance aggressive)
 * Coremark/MHz = 2.46 (GCC 16.1, -O3)
 * Coremark CPI = 1.38 (GCC 16.1, -O3)
 
