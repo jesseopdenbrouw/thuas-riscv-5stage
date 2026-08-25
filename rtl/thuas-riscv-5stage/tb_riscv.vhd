@@ -48,7 +48,7 @@ end entity tb_riscv;
 
 architecture sim of tb_riscv is
 
--- Component is loaded by processor_common.vhd
+-- Component 'riscv' is loaded by processor_common.vhd
 signal clk : std_logic;
 signal areset : std_logic;
 signal tck : std_logic;
@@ -97,36 +97,36 @@ begin
               -- Do we have the buildin bootloader?
               HAVE_BOOTLOADER_ROM => false,
               -- Disable CSR address check when in debug mode
-              OCD_CSR_CHECK_DISABLE => TRUE,
+              OCD_CSR_CHECK_DISABLE => false,
               -- Do we use post-increment address pointer when debugging?
               OCD_AAMPOSTINCREMENT => TRUE,
               -- Do we have integer hardware multiply/divide?
               HAVE_MULDIV => TRUE,
               -- Do we have the fast divider?
-              FAST_DIVIDE => false,
+              FAST_DIVIDE => false,                         -- not implemented
               -- Do we have the Zba extension?
               HAVE_ZBA => false,
               -- Do we have Zbb (bit instructions)?
-              HAVE_ZBB => false,
+              HAVE_ZBB => false,                            -- not implemented
               -- Do we have Zbs (bit instructions)?
               HAVE_ZBS => false,
               -- Do we have Zicond (czero.{eqz|nez})?
               HAVE_ZICOND => false,
               -- Have Zimop?
-              HAVE_ZIMOP => false,
+              HAVE_ZIMOP => false,                          -- not implemented
               -- Have Zbkb (bitmanip instructions for cryptography)
-              HAVE_ZBKB => false,
+              HAVE_ZBKB => false,                           -- not implemented
               -- Do we have HPM counters?
-              HAVE_ZIHPM => false,
+              HAVE_ZIHPM => false,                          -- not implemented
               -- Do we have vectored MTVEC (for interrupts)?
               VECTORED_MTVEC => TRUE,
               -- Do we have registers in onboard RAM?
-              HAVE_REGISTERS_IN_RAM => TRUE,
+              HAVE_REGISTERS_IN_RAM => false,               -- not implemented
               -- Number of address bits for ROM
               ROM_ADDRESS_BITS => 16,
               -- Number of address bits for RAM
               RAM_ADDRESS_BITS => 15,
-              -- 4 high bits of ROM address
+              -- 4 high bits of ROM address 
               ROM_HIGH_NIBBLE => x"0",
               -- 4 high bits of boot ROM address
               BOOT_HIGH_NIBBLE => x"1",
@@ -135,13 +135,13 @@ begin
               -- 4 high bits of I/O address
               IO_HIGH_NIBBLE => x"F",
               -- Buffer I/O response
-              BUFFER_IO_RESPONSE => false,
+              BUFFER_IO_RESPONSE => false,                  -- not implemented
               -- Fast memory access (severly reduces Fmax)?
-              FAST_MEM => false,
+              FAST_MEM => false,                            -- not implemented
               -- Use UART1?
               HAVE_UART1 => TRUE,
               -- Use UART2?
-              HAVE_UART2 => TRUE,
+              HAVE_UART2 => false,
               -- Use SPI1?
               HAVE_SPI1 => TRUE,
               -- Use SPI2?
@@ -260,7 +260,7 @@ begin
 --        end loop;
         uart1rxd <= '1';
         
-        wait for 500 ns;
+        wait for 22020 ns;
         wait until clk = '1';
         
 
@@ -272,6 +272,11 @@ begin
         work.jtag_dmi_pkg.jtag_reset(tck, tms, tdi, tdo);
         wait for 200 ns;
 
+        -- Try to read IDCODE
+        work.jtag_dmi_pkg.idcode_read(tck, tms, tdi, tdo, data_from_dtm_v);
+        data_from_dtm <= data_from_dtm_v;
+        wait for 200 ns;
+        
         -- Write DM Active in dmcontrol (0x10)
         work.jtag_dmi_pkg.dmi_write(tck, tms, tdi, tdo, "0010000", x"00000001");
         wait for 200 ns;
@@ -304,9 +309,11 @@ begin
         -- Try to write data to mscratch
         -- First write data to data0
         work.jtag_dmi_pkg.dmi_write(tck, tms, tdi, tdo, "0000100", x"aaaa5555");
+--        work.jtag_dmi_pkg.dmi_write(tck, tms, tdi, tdo, "0000100", x"30000000");
         wait for 200 ns;
         -- Write to mscratch
         work.jtag_dmi_pkg.dmi_write(tck, tms, tdi, tdo, "0010111", x"00230340");
+--        work.jtag_dmi_pkg.dmi_write(tck, tms, tdi, tdo, "0010111", x"002307b1");
         wait for 200 ns;
         
         -- Try to read address 0x20000000
