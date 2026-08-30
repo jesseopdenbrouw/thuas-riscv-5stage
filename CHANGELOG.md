@@ -17,4 +17,5 @@ All dates are in dd.mm.yyyy format.
 | 18-08-2026 | 2.0.0.1  | [core] fix vectored imterrupt calculation | |
 | 20-08-2026 | 2.0.0.2  | [core] interrupts only acknowledged when not stepping, halt ack only when in debug state | |
 | 22-08-2026 | 2.0.0.3  | [core] fixed an issue where trap during step did not save the correct PC | |
+| 30-08-2026 | 2.0.0.4  | [core] implemented Zimop, removed unused signal, FENCE now count as retired instruction | |
 

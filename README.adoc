@@ -2,7 +2,7 @@
 
 *preliminary*
 
-This is an implementation of the THUAS RISC-V RV32IM SoC using a classic 5-stage pipelined core. The core implements the 32-bit integer (I) and multiplication/division (M) extensions, the Zicsr and Zicntr extensions, and optionally the Zba, Zbs and Zicond extensions. The SoC can be equipped with a bootloader to upload programs to memory and/or an on-chip debugger to debug the SoC using the JTAG protocol. The on-chip debugger works with OpenOCD, GDB and Eclipse-CDT.
+This is an implementation of the THUAS RISC-V RV32IM SoC using a classic 5-stage pipelined core. The core implements the 32-bit integer (I) and multiplication/division (M) extensions, the Zicsr and Zicntr extensions, and optionally the Zba, Zbs, Zicond and Zimop extensions. The SoC can be equipped with a bootloader to upload programs to memory and/or an on-chip debugger to debug the SoC using the JTAG protocol. The on-chip debugger works with OpenOCD, GDB and Eclipse-CDT.
 
 All instructions from the "The RISC-V Instruction Set Manual Volume I, Unprivileged Architecture, Version 20260120", RV32I, are supported, so including `fence` and `hint` which act as no-ops, and `ecall` and `ebreak`.  Also, the RV32M instructions are supported. From the "The RISC-V Instruction Set Manual: Volume II Privileged Architecture, Version 20260120", Machine-Level ISA, Version 1.13, `mret` and `wfi` are supported. The microcontroller supports Machine mode only. Traps (interrupts and exceptions) are supported.
 
@@ -68,6 +68,5 @@ Please note the following:
 * The `FAST_DIVIDE` generic is not implemented. Integer divisions are rare in software programs so there is no real benefit.
 * The `HAVE_ZBB` generic is not implemented.
 * The `HAVE_ZBKB` generic is not implemented.
-* The `HAVE_ZIMOP` generic is not implemented
 * The `HAVE_ZIHPM` generic is not implemented.
 

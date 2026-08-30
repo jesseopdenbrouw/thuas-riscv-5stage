@@ -737,7 +737,6 @@ begin
     assert not FAST_MEM report "FAST_MEM not implemented" severity warning;
     assert not FAST_DIVIDE report "FAST_DIVIDE not implemented" severity warning;
     assert not HAVE_ZBB report "Zbb not implemented" severity warning;
-    assert not HAVE_ZIMOP report "Zimop not implemented" severity warning;
     assert not HAVE_ZBKB report "Zbkb not implemented" severity warning;
     assert not HAVE_ZIHPM report "Zihpm performance counters not implemented" severity warning;
     assert not HAVE_REGISTERS_IN_RAM report "HAVE_REGISTERS_IN_RAM not implemented, registers always in RAM" severity warning;

@@ -45,7 +45,7 @@ use ieee.numeric_std.all;
 package processor_common is
 
     -- Hardware version, BCD encoded
-    constant HW_VERSION : integer := 16#02_00_00_03#;
+    constant HW_VERSION : integer := 16#02_00_00_04#;
 
     
     -- Used data types
@@ -85,7 +85,7 @@ package processor_common is
     type memorybyte_type is array (natural range <>) of std_logic_vector(7 downto 0);
     
     -- ALU operations
-    type alu_op_type is (alu_unknown, alu_nop,
+    type alu_op_type is (alu_unknown, alu_nop, alu_fence,
                          alu_add, alu_sub, alu_and, alu_or, alu_xor,
                          alu_slt, alu_sltu,
                          alu_addi, alu_andi, alu_ori, alu_xori,
@@ -103,7 +103,8 @@ package processor_common is
                          alu_sh1add, alu_sh2add, alu_sh3add,                -- Zba
                          alu_bclr, alu_bclri, alu_bext, alu_bexti,          -- Zbs
                          alu_binv, alu_binvi, alu_bset, alu_bseti,          -- Zbs
-                         alu_czeroeqz, alu_czeronez                         -- Zicond
+                         alu_czeroeqz, alu_czeronez,                        -- Zicond
+                         alu_mop                                            -- Zimop
                         );
                         
 

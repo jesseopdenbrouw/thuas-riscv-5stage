@@ -245,8 +245,6 @@ type wb_bp_type is record
     rd : reg_type;
     rd_en : std_logic;
     rddata : data_type;
-    -- Instruction execute valid
-    valid : std_logic;
 end record wb_bp_type;
 signal wb_bp : wb_bp_type;
 
@@ -1246,7 +1244,7 @@ begin
                                 elsif func3_v = "111" and func7_v = "0000000" then
                                     id_ex.alu_op <= alu_and;
                                     id_ex.rd_en <= '1';
-                                 -- SH1ADD
+                                -- SH1ADD
                                 elsif func3_v = "010" and func7_v = "0010000" and HAVE_ZBA then
                                     id_ex.alu_op <= alu_sh1add;
                                     id_ex.rd_en <= '1';
@@ -1455,6 +1453,17 @@ begin
                                         id_ex.rd_en <= '1';
                                         id_ex.csr_addr <= imm_i_v(11 downto 0);
                                         id_ex.csr_immrs1 <= rs1_v; -- imm
+                                    when "100" => -- MOP (may be operations)
+                                        if HAVE_ZIMOP and
+                                           I_instr_response.instr(31) = '1' and
+                                           I_instr_response.instr(29 downto 28) = "00" and
+                                          (I_instr_response.instr(25) = '1' or 
+                                           I_instr_response.instr(25 downto 22) = "0111") then
+                                            id_ex.alu_op <= alu_mop;
+                                            id_ex.rd_en <= '1';
+                                         else
+                                            control.illegal_instruction_decode <= '1';
+                                         end if;
                                     when others =>
                                         control.illegal_instruction_decode <= '1';
                                 end case;
@@ -1464,6 +1473,7 @@ begin
                             when "00011" =>
                                 if func3_v = "000" or func3_v = "001" then
                                     -- Just ignore
+                                    id_ex.alu_op <= alu_fence;
                                     null;
                                 else
                                     control.illegal_instruction_decode <= '1';
@@ -1651,6 +1661,16 @@ begin
             when alu_unknown | alu_nop | alu_trap =>
                 null;
             
+            -- Zimop
+            when alu_mop =>
+                if HAVE_ZIMOP then
+                    valid_v := '1';
+                end if;
+
+            -- FENCE
+            when alu_fence =>
+                valid_v := '1';
+
            -- Return from trap, dirty trick, needs to be revised.
            -- This sets the branch penalty, which causes a flush
             when alu_mret =>
@@ -2035,18 +2055,15 @@ begin
             wb_bp.rd <= (others => '0');
             wb_bp.rd_en <= '0';
             wb_bp.rddata <= all_zeros_c;
-            wb_bp.valid <= '0';
         elsif rising_edge(I_clk) then
             if I_sreset = '1' then
                 wb_bp.rd <= (others => '0');
                 wb_bp.rd_en <= '0';
                 wb_bp.rddata <= all_zeros_c;
-                wb_bp.valid <= '0';
             else
                 wb_bp.rd <= mem_wb.rd;
                 wb_bp.rd_en <= mem_wb.rd_en;
                 wb_bp.rddata <= mem_wb.rddata;
-                wb_bp.valid <= mem_wb.valid;
             end if;
         end if;
     end process;
@@ -2679,7 +2696,7 @@ begin
 
         -- Calculate the MTVEC to be loaded in the PC on trap
         if VECTORED_MTVEC and csr_reg.mtvec(0) = '1' and csr_reg.mcause(31) = '1' then
-            csr_transfer.mtvec_to_pc <= std_logic_vector(unsigned(csr_reg.mtvec(csr_reg.mtvec'left downto 2)) + unsigned(csr_reg.mcause(5 downto 0))) & "00";
+            csr_transfer.mtvec_to_pc <= std_logic_vector(unsigned(csr_reg.mtvec(csr_reg.mtvec'left downto 2)) + unsigned(csr_reg.mcause(4 downto 0))) & "00";
         else
             csr_transfer.mtvec_to_pc <= csr_reg.mtvec(csr_reg.mtvec'left downto 2) & "00";
         end if;

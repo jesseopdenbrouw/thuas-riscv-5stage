@@ -120,7 +120,7 @@ begin
               -- Do we have Zicond (czero.{eqz|nez})?
               HAVE_ZICOND => false,
               -- Have Zimop?
-              HAVE_ZIMOP => false,                      -- not implemented
+              HAVE_ZIMOP => false,
               -- Have Zbkb (bitmanip instructions for cryptography)
               HAVE_ZBKB => false,                       -- not implemented
               -- Do we have HPM counters?
