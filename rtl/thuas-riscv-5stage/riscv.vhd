@@ -912,7 +912,7 @@ begin
               MEMORY_USE_WRITE => HAVE_OCD or HAVE_BOOTLOADER_ROM,
               MEMORY_CONTENTS => rom_contents,
               MEMORY_DEFAULT => '0',
-              MEMORY_FILE => "rom_image.mif"
+              MEMORY_FILE => "UNUSED"
              )
     port map (I_clk => clk_int,
               I_areset => areset_sys_int,
