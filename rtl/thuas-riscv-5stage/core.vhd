@@ -1411,6 +1411,7 @@ begin
                                             id_ex.pc_op <= pc_load_mepc;
                                         elsif I_instr_response.instr(31 downto 20) = "000100000101" then
                                             -- WFI
+                                            id_ex.alu_op <= alu_wfi;
                                             -- Only execute while not stepping
                                             control.wfi_request <= not control.isstepping;
                                         else
@@ -1667,8 +1668,8 @@ begin
                     valid_v := '1';
                 end if;
 
-            -- FENCE
-            when alu_fence =>
+            -- FENCE. WFI
+            when alu_fence | alu_wfi =>
                 valid_v := '1';
 
            -- Return from trap, dirty trick, needs to be revised.
@@ -2743,7 +2744,7 @@ begin
     csr_reg.mxhw(18) <= boolean_to_std_logic(HAVE_BOOTLOADER_ROM);
     csr_reg.mxhw(19) <= '1'; -- not avail: boolean_to_std_logic(HAVE_REGISTERS_IN_RAM);
     csr_reg.mxhw(20) <= boolean_to_std_logic(HAVE_ZBA);
-    csr_reg.mxhw(21) <= '0'; -- boolean_to_std_logic(HAVE_ZIMOP);
+    csr_reg.mxhw(21) <= boolean_to_std_logic(HAVE_ZIMOP);
     csr_reg.mxhw(22) <= boolean_to_std_logic(HAVE_ZICOND);
     csr_reg.mxhw(23) <= boolean_to_std_logic(HAVE_ZBS);
     csr_reg.mxhw(24) <= boolean_to_std_logic(UART1_BREAK_RESETS);

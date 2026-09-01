@@ -45,7 +45,7 @@ use ieee.numeric_std.all;
 package processor_common is
 
     -- Hardware version, BCD encoded
-    constant HW_VERSION : integer := 16#02_00_00_04#;
+    constant HW_VERSION : integer := 16#02_00_00_05#;
 
     
     -- Used data types
@@ -85,7 +85,7 @@ package processor_common is
     type memorybyte_type is array (natural range <>) of std_logic_vector(7 downto 0);
     
     -- ALU operations
-    type alu_op_type is (alu_unknown, alu_nop, alu_fence,
+    type alu_op_type is (alu_unknown, alu_nop, alu_fence, alu_wfi,
                          alu_add, alu_sub, alu_and, alu_or, alu_xor,
                          alu_slt, alu_sltu,
                          alu_addi, alu_andi, alu_ori, alu_xori,
