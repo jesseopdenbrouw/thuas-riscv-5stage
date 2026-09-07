@@ -27,7 +27,7 @@ Instruction execution times:
 * CSR: 1 clock
 * All other instructions: 1 clock
 
-An trap taken takes 4 clocks, a return from the handler takes 3 clocks. Note that multi-cycle operations cannot be interrupted.
+A trap taken takes 4 clocks, a return from the handler takes 3 clocks. Note that multi-cycle operations cannot be interrupted and will retired before the trap is taken.
 
 When the on-chip debugger is used, the halt state is typically reached in 3 clocks. A resume from halt takes 4 clocks.
 
@@ -66,7 +66,7 @@ Please note the following:
 * The `BUFFER_IO_RESPONSE` generic is not implemented. The extra cycle delay is not compatible with the memory hardware.
 * The `HAVE_REGISTERS_IN_RAM` generic is not implemented. The registers are always implemented with onboard RAM.
 * The `FAST_DIVIDE` generic is not implemented. Integer divisions are rare in software programs so there is no real benefit.
-* The `HAVE_ZBB` generic is not implemented.
+* The `HAVE_ZBB` generic is not implemented. Will be implemented later.
 * The `HAVE_ZBKB` generic is not implemented.
 * The `HAVE_ZIHPM` generic is not implemented.
 
