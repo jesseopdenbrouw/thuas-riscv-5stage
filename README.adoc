@@ -27,7 +27,7 @@ Instruction execution times:
 * CSR: 1 clock
 * All other instructions: 1 clock
 
-A trap taken takes 4 clocks, a return from the handler takes 3 clocks. Note that multi-cycle operations cannot be interrupted and will retired before the trap is taken.
+A trap taken takes 4 clocks, a return from the handler takes 3 clocks. Note that multi-cycle operations cannot be interrupted and will retire before the trap is taken.
 
 When the on-chip debugger is used, the halt state is typically reached in 3 clocks. A resume from halt takes 4 clocks.
 
