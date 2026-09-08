@@ -199,9 +199,9 @@ type id_ex_type is record
     csr_op : csr_op_type;
     csr_addr : std_logic_vector(11 downto 0);
     csr_immrs1 : std_logic_vector(4 downto 0);
+    -- Test signals can be removed
     -- Instruction execute valid
     valid : std_logic;
-    -- Test signals can be removed
     a, b, c, r : data_type;
 end record id_ex_type;
 signal id_ex : id_ex_type;
@@ -413,7 +413,7 @@ begin
     -- processor and supplies the control signals to the
     -- other blocks.
     --
-
+    
     -- Hardware breakpoint match
     control.bpmatch <= '1' when id_ex.pc = csr_reg.tdata2 and                   -- instruction address match
                                 csr_reg.tdata1(6) = '1' and                     -- and M mode
@@ -473,13 +473,11 @@ begin
                         
                         -- If user halt request...
                         if I_halt_req = '1' and HAVE_OCD then
---                            control.step <= '0';                --
                             control.state <= state_debugpre1;   -- Goto to debug state
                             control.load_dpc <= '1';            -- Load DPC with PC
                             csr_reg.dcsr_cause <= "1011";       -- Signal halt to user
                         -- If hardware breakpoint and not resuming from this breakpoint...
                         elsif control.bpmatch = '1' and control.skip_match = '0' and HAVE_OCD then
---                            control.step <= '0';                --
                             control.state <= state_debugpre1;   -- Goto debug state
                             control.load_dpc <= '1';            -- Load DPC with PC
                             csr_reg.dcsr_cause <= "1010";       -- Signal HW break to user
@@ -487,13 +485,11 @@ begin
                         -- Can be switched off with: <targetname> riscv set_ebreakm off
                         -- dcsr(15) is dcsr.ebreakm bit
                         elsif control.ebreak_request = '1' and csr_reg.dcsr(15) = '1' and HAVE_OCD then
---                            control.step <= '0';                --
                             control.state <= state_debugpre1;   -- Goto debug state
                             control.load_dpc <= '1';            -- Load DPC with PC
                             csr_reg.dcsr_cause <= "1001";       -- Signal EBREAK to user
                         -- If we are stapping and not resuming from this breakpoint...
                         elsif control.isstepping = '1' and control.step = '0' and HAVE_OCD then
---                            control.step <= '0';
                             control.state <= state_debugpre1;   -- Goto debug state
                             control.load_dpc <= '1';            -- Load DPC with PC
                             csr_reg.dcsr_cause <= "1100";       -- Signal STEP to user
@@ -563,13 +559,15 @@ begin
                     -- Start entering debug mode, needed to get latest
                     -- data in register file before entering debug
                     when state_debugpre1 =>
+                        -- Make it a one-shot
+                        csr_reg.dcsr_cause <= "0000";
                         control.state <= state_debugpre2;
                     when state_debugpre2 =>
                         O_halt_ack <= '1';
                         control.state <= state_debug;
                     -- When we're in debug...
                     when state_debug =>
-                        csr_reg.dcsr_cause <= "0000";
+--                        csr_reg.dcsr_cause <= "0000";
                         -- If resuming from stepping and we are stepping...
                         if I_resume_req = '1' and control.isstepping = '1' then
                             control.state <= state_debugflush;   -- Flush the pipeline
@@ -591,6 +589,8 @@ begin
                         end if;
                     -- Flush after leaving debug state
                     when state_debugflush =>
+                        -- Make it a one-shot
+                        csr_reg.dcsr_cause <= "0000";
                         control.state <= state_debugflush2;
                     when state_debugflush2 =>
                         control.state <= state_debugflush3;
