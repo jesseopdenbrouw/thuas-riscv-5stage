@@ -113,7 +113,7 @@ begin
               -- Do we have Zicond (czero.{eqz|nez})?
               HAVE_ZICOND => false,
               -- Have Zimop?
-              HAVE_ZIMOP => false,                          -- not implemented
+              HAVE_ZIMOP => false,
               -- Have Zbkb (bitmanip instructions for cryptography)
               HAVE_ZBKB => false,                           -- not implemented
               -- Do we have HPM counters?
@@ -210,16 +210,12 @@ begin
         wait for 10 ns;
     end process;
     
-    -- Data generate
+    -- UART generate
     process is
-    variable data_from_dtm_v : data_type;
     begin
         -- Reset is active high
         areset <= '1';
-        -- JTAG
-        tck <= '0';
-        tms <= '0';
-        tdi <= '0';
+
         -- RxD input is idle high
         uart1rxd <= '1';
         gpioapin <= x"ffffff40";
@@ -260,7 +256,20 @@ begin
 --        end loop;
         uart1rxd <= '1';
         
-        wait for 22020 ns;
+        wait;
+    end process;
+    
+    -- Debug generate
+    process is
+    variable data_from_dtm_v : data_type;
+    begin
+
+            -- JTAG
+        tck <= '0';
+        tms <= '0';
+        tdi <= '0';
+
+        wait for 22000 ns;
         wait until clk = '1';
         
 
@@ -378,12 +387,74 @@ begin
         work.jtag_dmi_pkg.dmi_write(tck, tms, tdi, tdo, "0010111", x"002307b0");
         wait for 200 ns;
 
+        -- Set hardware breakpoint
+        -- Write data0
+        work.jtag_dmi_pkg.dmi_write(tck, tms, tdi, tdo, "0000100", x"000014b8");
+--        work.jtag_dmi_pkg.dmi_write(tck, tms, tdi, tdo, "0000100", x"f0000104");
+        wait for 200 ns;
+        -- Write to tdata2
+        work.jtag_dmi_pkg.dmi_write(tck, tms, tdi, tdo, "0010111", x"002307a2");
+        wait for 200 ns;
+        -- Write data0
+        work.jtag_dmi_pkg.dmi_write(tck, tms, tdi, tdo, "0000100", x"00001044");
+--        work.jtag_dmi_pkg.dmi_write(tck, tms, tdi, tdo, "0000100", x"00001041");
+        wait for 200 ns;
+        -- Write to tdata1
+        work.jtag_dmi_pkg.dmi_write(tck, tms, tdi, tdo, "0010111", x"002307a1");
+        wait for 200 ns;
+        
         -- Try to resume
+        wait for 10000 ns;
         work.jtag_dmi_pkg.dmi_write(tck, tms, tdi, tdo, "0010000", x"40000001");
         wait for 200 ns;
         work.jtag_dmi_pkg.dmi_write(tck, tms, tdi, tdo, "0010000", x"00000001");
         wait for 200 ns;
         
+        -- Read DM.dmstatus
+        wait for 10000 ns;
+        loop
+            work.jtag_dmi_pkg.dmi_read(tck, tms, tdi, tdo, "0010001", data_from_dtm_v);
+            data_from_dtm <= data_from_dtm_v;
+            exit when data_from_dtm_v(8) = '1';
+        end loop;
+
+        wait for 10000 ns;
+        
+        -- Try to resume
+        work.jtag_dmi_pkg.dmi_write(tck, tms, tdi, tdo, "0010000", x"40000001");
+        wait for 200 ns;
+        work.jtag_dmi_pkg.dmi_write(tck, tms, tdi, tdo, "0010000", x"00000001");
+        wait for 200 ns;
+
+        -- Read DM.dmstatus
+        wait for 10000 ns;
+        loop
+            work.jtag_dmi_pkg.dmi_read(tck, tms, tdi, tdo, "0010001", data_from_dtm_v);
+            data_from_dtm <= data_from_dtm_v;
+            exit when data_from_dtm_v(8) = '1';
+        end loop;
+        wait for 10000 ns;
+        
+        -- Remove hardware breakpoint
+        -- Write data0
+        work.jtag_dmi_pkg.dmi_write(tck, tms, tdi, tdo, "0000100", x"00000000");
+        wait for 200 ns;
+        -- Write to tdata1
+        work.jtag_dmi_pkg.dmi_write(tck, tms, tdi, tdo, "0010111", x"002307a1");
+        wait for 200 ns;
+        -- Write data0
+        work.jtag_dmi_pkg.dmi_write(tck, tms, tdi, tdo, "0000100", x"00000000");
+        wait for 200 ns;
+        -- Write to tdata2
+        work.jtag_dmi_pkg.dmi_write(tck, tms, tdi, tdo, "0010111", x"002307a2");
+        wait for 200 ns;
+
+        -- Try to resume
+        work.jtag_dmi_pkg.dmi_write(tck, tms, tdi, tdo, "0010000", x"40000001");
+        wait for 200 ns;
+        work.jtag_dmi_pkg.dmi_write(tck, tms, tdi, tdo, "0010000", x"00000001");
+        wait for 200 ns;
+
         wait;
         
     end process;
