@@ -20,4 +20,5 @@ All dates are in dd.mm.yyyy format.
 | 30-08-2026 | 2.0.0.4  | [core] implemented Zimop, removed unused signal, FENCE now count as retired instruction | |
 | 01-09-2026 | 2.0.0.5  | [core] WFI now retires | |
 | 08-09-2026 | 2.0.0.6  | [core] DCSR.cause is now written as one-shot | |
+| 12-09-2026 | 2.0.0.7  | [core] fix a bug that prevented to entering debug state on the first HW trigger, code cleanup | |
 

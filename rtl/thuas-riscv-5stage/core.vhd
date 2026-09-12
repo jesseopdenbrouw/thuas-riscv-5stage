@@ -414,14 +414,16 @@ begin
     -- other blocks.
     --
     
-    -- Hardware breakpoint match
+    -- Hardware breakpoint match, break before retire
     control.bpmatch <= '1' when id_ex.pc = csr_reg.tdata2 and                   -- instruction address match
                                 csr_reg.tdata1(6) = '1' and                     -- and M mode
                                 csr_reg.tdata1(2) = '1' and                     -- and EXECUTE
                                 csr_reg.tdata1(15 downto 12) = "0001" and       -- and enter debug mode
-                                csr_reg.tdata1(10 downto 07) = "0000" else      -- and match equal   
-                       '0'; 
-    
+                                csr_reg.tdata1(10 downto 07) = "0000" else      -- and match equal
+                       '0';
+
+
+    -- Core controller
     process (I_clk, I_areset) is
     begin
         if I_areset = '1' then
@@ -471,6 +473,7 @@ begin
                         O_resume_ack <= '1';  -- keep this at '1'
                         O_halt_ack <= '0';
                         
+                        -- First, check for debugger intervention
                         -- If user halt request...
                         if I_halt_req = '1' and HAVE_OCD then
                             control.state <= state_debugpre1;   -- Goto to debug state
@@ -513,6 +516,7 @@ begin
                             control.state <= state_exec;
                         end if;
                         control.step <= '0';
+                        control.skip_match <= '0';
                     -- Flush IF and ID
                     when state_flush =>
                         control.state <= state_flush2;
@@ -549,7 +553,6 @@ begin
                     when state_wfi =>
                         -- A halt request on WFI goes to debug state
                         if I_halt_req = '1' and HAVE_OCD then
-                            control.step <= '0';                --
                             control.state <= state_debugpre1;   -- Goto to debug state
                             control.load_dpc <= '1';            -- Load DPC with PC
                             csr_reg.dcsr_cause <= "1011";       -- Signal halt to user                  
@@ -559,15 +562,13 @@ begin
                     -- Start entering debug mode, needed to get latest
                     -- data in register file before entering debug
                     when state_debugpre1 =>
-                        -- Make it a one-shot
-                        csr_reg.dcsr_cause <= "0000";
                         control.state <= state_debugpre2;
                     when state_debugpre2 =>
-                        O_halt_ack <= '1';
                         control.state <= state_debug;
                     -- When we're in debug...
                     when state_debug =>
---                        csr_reg.dcsr_cause <= "0000";
+                        csr_reg.dcsr_cause <= "0000";
+                        O_halt_ack <= '1';
                         -- If resuming from stepping and we are stepping...
                         if I_resume_req = '1' and control.isstepping = '1' then
                             control.state <= state_debugflush;   -- Flush the pipeline
@@ -589,8 +590,6 @@ begin
                         end if;
                     -- Flush after leaving debug state
                     when state_debugflush =>
-                        -- Make it a one-shot
-                        csr_reg.dcsr_cause <= "0000";
                         control.state <= state_debugflush2;
                     when state_debugflush2 =>
                         control.state <= state_debugflush3;
@@ -623,24 +622,23 @@ begin
     -- In debug mode
     control.indebug <= '1' when control.state = state_debug and HAVE_OCD else '0';
 
-
-    -- Stall the ROM
+    -- Stall fetching instructions
     O_instr_request.stall <= control.stall or control.stall_on_debug;
     
     -- We're stepping
     control.isstepping <= '1' when csr_reg.dcsr(2) = '1' else '0';
     
     -- We're flushing the pipeline
-    control.flush <= '1' when control.penalty = '1' or          -- if branching
-                              control.wfi_request = '1' or      -- if WFI
-                              control.loadhazard = '1' or       -- if load hazard    <-- extra info needed
-                              control.state = state_flush or    -- do to branching
+    control.flush <= '1' when control.penalty = '1' or             -- if branching
+                              control.wfi_request = '1' or         -- if WFI
+                              control.loadhazard = '1' or          -- if load hazard    <-- extra info needed
+                              control.state = state_flush or       -- due to branching
                               control.state = state_debugflush or  -- leaving debug
                               control.state = state_debugflush2 or
-                              control.state = state_trap or     -- when entering trap
-                              control.state = state_trap2 or    -- when entering trap
-                              control.state = state_mret or     -- if returning from IH    
-                              control.state = state_boot0       -- when after reset
+                              control.state = state_trap or        -- when entering trap
+                              control.state = state_trap2 or       -- when entering trap
+                              control.state = state_mret or        -- if returning from IH    
+                              control.state = state_boot0          -- when after reset
                          else '0';
 
     -- Delay the release request (for use in the CSR)
@@ -692,13 +690,39 @@ begin
         end if;
     end process;
 
-    
+    -- Forwarding: check if we need forwarding data
+    -- Extra stage to bypass register file (WB/BP)
+    process (id_ex, ex_mem, mem_wb, wb_bp) is
+    begin
+        if id_ex.rs1 = ex_mem.rd and ex_mem.rd_en = '1' then
+            control.forwarda <= "10";
+        elsif id_ex.rs1 = mem_wb.rd and mem_wb.rd_en = '1' then
+            control.forwarda <= "01";
+        elsif id_ex.rs1 = wb_bp.rd and wb_bp.rd_en = '1' then
+            control.forwarda <= "11";
+        else
+            control.forwarda <= "00";
+        end if;
+        if id_ex.rs2 = ex_mem.rd and ex_mem.rd_en = '1' then
+            control.forwardb <= "10";
+        elsif id_ex.rs2 = mem_wb.rd and mem_wb.rd_en = '1' then
+            control.forwardb <= "01";
+        elsif id_ex.rs2 = wb_bp.rd and wb_bp.rd_en = '1' then
+            control.forwardb <= "11";
+        else
+            control.forwardb <= "00";
+        end if;
+    end process;
+
+
+
     --
-    -- Instruction fetch block
+    -- IF stage
+    --
+    
     -- This block controls the instruction fetch from the ROM.
     -- It also instructs the PC to load a new address, either
     -- the next sequential address or a jump target address.
-    --
     
     -- The PC
     process (I_clk, I_areset) is
@@ -752,16 +776,7 @@ begin
                                 a_v := id_ex.rs1data;
                             end if;
                             pc <= std_logic_vector(unsigned(a_v) + unsigned(id_ex.imm));
---                            if control.forwarda = "10" then
---                                pc <= std_logic_vector(unsigned(ex_mem.rs1data) + unsigned(id_ex.imm));
---                            elsif control.forwarda = "01" then
---                                pc <= std_logic_vector(unsigned(mem_wb.rddata) + unsigned(id_ex.imm));
---                            elsif control.forwarda = "11" then
---                                pc <= std_logic_vector(unsigned(wb_bp.rddata) + unsigned(id_ex.imm));
---                            else
---                                pc <= std_logic_vector(unsigned(id_ex.rs1data) + unsigned(id_ex.imm));
---                            end if;
-                            -- As per RISC-V unpriv spec (1.1.5.1. Unconditional Jumps)
+                            -- Set LSB to 0, see Unpriv'd Spec S.1.1.5.1.
                             pc(0) <= '0';
                         -- Branch
                         when pc_branch =>
@@ -811,34 +826,8 @@ begin
     end process;
     
     
-    -- Forwarding: check if we need forwarding data
-    -- Extra stage to bypass register file (WB/BP)
-    process (id_ex, ex_mem, mem_wb, wb_bp) is
-    begin
-        if id_ex.rs1 = ex_mem.rd and ex_mem.rd_en = '1' then
-            control.forwarda <= "10";
-        elsif id_ex.rs1 = mem_wb.rd and mem_wb.rd_en = '1' then
-            control.forwarda <= "01";
-        elsif id_ex.rs1 = wb_bp.rd and wb_bp.rd_en = '1' then
-            control.forwarda <= "11";
-        else
-            control.forwarda <= "00";
-        end if;
-        if id_ex.rs2 = ex_mem.rd and ex_mem.rd_en = '1' then
-            control.forwardb <= "10";
-        elsif id_ex.rs2 = mem_wb.rd and mem_wb.rd_en = '1' then
-            control.forwardb <= "01";
-        elsif id_ex.rs2 = wb_bp.rd and wb_bp.rd_en = '1' then
-            control.forwardb <= "11";
-        else
-            control.forwardb <= "00";
-        end if;
-    end process;
-
-
-    
     --
-    -- IF/ID stage: instruction decode block
+    -- ID stage: instruction decode block
     --
    
     process (I_clk, I_areset, I_instr_response, control, id_ex) is
@@ -895,9 +884,9 @@ begin
         if_id.selrs1 <= to_integer(unsigned(rs1_v));
         if_id.selrs2 <= to_integer(unsigned(rs2_v));
         
-        -- Load-hazard detection: if current executing instruction is a load and
-        -- one of the sources in the ID/EX stage is the destination in the 
-        -- EX/MEM stage, only for a load in the EX/MAM stage. 
+        -- Load-hazard detection: check if current executing instruction is a load and
+        -- one of the sources in the ID stage is the destination in the 
+        -- EX stage, only for a load in the EX/MAM stage. 
         -- Note that I-type, U-type and J-type instructions do NOT have an RS2 field,
         -- so this may give a false positve.
         -- Check if instruction uses RS1 and/or RS2 field
@@ -1587,6 +1576,9 @@ begin
     -- Instruction execute block
     --
     
+    --
+    -- EXE stage
+    --
     process (I_clk, I_areset, id_ex, ex_mem, mem_wb, wb_bp, control, md, csr_access) is
     variable al_v, bl_v : std_logic_vector(32 downto 0);
     variable a_v, b_v, r_v : data_type;
@@ -1865,13 +1857,13 @@ begin
                 null;
         end case;
         
-        -- For debugging, can be removed
+        -- Only for simulation
         --synthesis translate_off
         id_ex.r <= r_v;
         id_ex.valid <= valid_v;
         --synthesis translate_on
         
-        -- Setup the EX/MEM stage
+        -- Setup the MEM stage
         if I_areset = '1' then
             ex_mem.rs1 <= (others => '0');
             ex_mem.rs2 <= (others => '0');
@@ -1939,7 +1931,7 @@ begin
     end process;
 
     --
-    -- EX/MEM stage: load/store data or pass through
+    -- MEM stage: load/store data or pass through
     --
     -- Address in RS1, data (store) in RS2
     process (ex_mem, I_dm_core_data_request, control) is
@@ -2019,7 +2011,7 @@ begin
     
     
     --
-    -- MEM/WB stage: select data to write in the registers
+    -- WB stage: select data to write in the registers
     --
     process (I_bus_response, mem_wb) is
     begin
@@ -2044,7 +2036,7 @@ begin
     end process;
             
     --
-    -- WB/BP stage
+    -- BP stage
     --
 
     -- Save result if register file must be bypassed.
@@ -2620,6 +2612,7 @@ begin
                     csr_reg.tdata1(25) <= '0';                       -- hit1 = 0
                     csr_reg.tdata1(24) <= '0';                       -- vs
                     csr_reg.tdata1(23) <= '0';                       -- vu
+                    csr_reg.tdata1(21) <= '0';                       -- select = address
                     csr_reg.tdata1(20) <= '0';                       -- 0
                     csr_reg.tdata1(19) <= '0';                       -- 0
                     csr_reg.tdata1(11) <= '0';                       -- chain
