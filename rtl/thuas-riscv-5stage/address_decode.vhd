@@ -78,8 +78,6 @@ end entity address_decode;
 
 architecture rtl of address_decode is
 
-signal sel_mem : std_logic_vector(3 downto 0);
-
 begin
 
     -- Address decoder and data router (may be forward from RS1)
@@ -138,6 +136,7 @@ begin
                                                  I_mem_response_ram.store_misaligned_error or
                                                  I_mem_response_io.store_misaligned_error; 
 
+
         -- ROM @ 0xxxxxxx, 256M space, read-write
         if I_bus_request.addr(31 downto 28) = ROM_HIGH_NIBBLE then
             if I_bus_request.acc = memaccess_read or I_bus_request.acc = memaccess_write then
@@ -186,37 +185,15 @@ begin
         end if;
     end process;
 
-    -- Save memory back number for load in next cycle
-    process (I_clk, I_areset) is
-    begin
-        if I_areset = '1' then
-            sel_mem <= (others => '0');
-        elsif rising_edge(I_clk) then
-            if I_sreset = '1' then
-                sel_mem <= (others => '0');
-            else
-                sel_mem <= I_bus_request.addr(31 downto 28);
-            end if;
-        end if;
-    end process;
+    
+    -- Fuse data from memories, memory must return zero bits when not accessed
+    O_bus_response.data <= I_mem_response_rom.data or I_mem_response_boot.data or
+                           I_mem_response_ram.data or I_mem_response_io.data;
 
-    -- Select data from load
-    process (sel_mem, I_mem_response_rom, I_mem_response_boot, I_mem_response_ram, I_mem_response_io) is
-    begin
-        -- This case is not according to VHDL semantics because the choices are not locally static.
-        -- Compiling with nvc results in an error.
-        case sel_mem is
-            when ROM_HIGH_NIBBLE  => O_bus_response.data <= I_mem_response_rom.data;
-            when BOOT_HIGH_NIBBLE => O_bus_response.data <= I_mem_response_boot.data;
-            when RAM_HIGH_NIBBLE  => O_bus_response.data <= I_mem_response_ram.data;
-            when IO_HIGH_NIBBLE   => O_bus_response.data <= I_mem_response_io.data;
-            when others           => O_bus_response.data <= (others => '-');
-        end case;
-
-    end process;
 
     -- Fuse all readies.
-    O_bus_response.ready <= I_mem_response_rom.ready or I_mem_response_boot.ready or I_mem_response_ram.ready or I_mem_response_io.ready;
+    O_bus_response.ready <= I_mem_response_rom.ready or I_mem_response_boot.ready or
+                            I_mem_response_ram.ready or I_mem_response_io.ready;
 
 end architecture rtl;
 
