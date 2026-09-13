@@ -104,7 +104,7 @@ signal memsize_dly : memsize_type;
 signal memaddr_dly : std_logic_vector(1 downto 0);
 
 -- Default bit contents
-constant x : std_logic_vector(7 downto 0) := (others => '-');
+constant x : std_logic_vector(7 downto 0) := (others => '0');
 -- Local signals
 signal address_data : integer range 0 to mem_size-1;
 signal byteena : std_logic_vector(3 downto 0);
