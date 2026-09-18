@@ -22,4 +22,5 @@ All dates are in dd.mm.yyyy format.
 | 08-09-2026 | 2.0.0.6  | [core] DCSR.cause is now written as one-shot | |
 | 12-09-2026 | 2.0.0.7  | [core] fix a bug that prevented to entering debug state on the first HW trigger, code cleanup | |
 | 13-09-2026 | 2.0.0.8  | [mem/address] all memories now return zero when not accessed, addres decoder now fuses returns from memory and I/O | |
+| 18-09-2026 | 2.0.0.9  | [io_bust_switch] fuse all I/O output | |
 

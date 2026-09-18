@@ -108,7 +108,7 @@ constant ADDRESS_SIZE_LOG2 : integer := 8;
 
 -- Select I/O device for response on read one clock later
 signal sel_io : std_logic_vector(3 downto 0);
-constant SELECT_IOMUX : boolean := TRUE;
+constant SELECT_IOMUX : boolean := false;
 
 begin
 
