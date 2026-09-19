@@ -1,5 +1,5 @@
 -- #################################################################################################
--- # mem_altera.vhd - Altera memory module with altsyncram IP block                                #
+-- # mem_altera_5stage.vhd - Altera memory module with altsyncram IP block                         #
 -- # ********************************************************************************************* #
 -- # This file is part of the THUAS RISCV RV32 Project                                             #
 -- # ********************************************************************************************* #
