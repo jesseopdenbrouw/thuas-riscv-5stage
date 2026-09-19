@@ -1186,6 +1186,40 @@ begin
                                     id_ex.rd_en <= '1';
                                     id_ex.imm <= imm_shamt_v;
                                     id_ex.isimm <= '1';
+                                -- SEXT.B, extra code in instructionm bit 24 to 20 (== RS2)
+                                elsif func3_v = "001" and func7_v = "0110000" and rs2_v = "00100" and HAVE_ZBB then
+                                    id_ex.alu_op <= alu_sextb;
+                                    id_ex.rd_en <= '1';
+                                -- SEXT.H, extra code in instructionm bit 24 to 20 (== RS2)
+                                elsif func3_v = "001" and func7_v = "0110000" and rs2_v = "00101" and HAVE_ZBB then
+                                    id_ex.alu_op <= alu_sexth;
+                                    id_ex.rd_en <= '1';
+                                -- CPOP, extra code in instructionm bit 24 to 20 (== RS2)
+                                elsif func3_v = "001" and func7_v = "0110000" and rs2_v = "00010" and HAVE_ZBB then
+                                    id_ex.alu_op <= alu_cpop;
+                                    id_ex.rd_en <= '1';
+                                -- CLZ, extra code in instructionm bit 24 to 20 (== RS2)
+                                elsif func3_v = "001" and func7_v = "0110000" and rs2_v = "00000" and HAVE_ZBB then
+                                    id_ex.alu_op <= alu_clz;
+                                    id_ex.rd_en <= '1';
+                                -- CTZ, extra code in instructionm bit 24 to 20 (== RS2)
+                                elsif func3_v = "001" and func7_v = "0110000" and rs2_v = "00001" and HAVE_ZBB then
+                                    id_ex.alu_op <= alu_ctz;
+                                    id_ex.rd_en <= '1';
+                                -- REV8, extra code in instructionm bit 24 to 20 (== RS2)
+                                elsif func3_v = "101" and func7_v = "0110100" and rs2_v = "11000" and HAVE_ZBB then
+                                    id_ex.alu_op <= alu_rev8;
+                                    id_ex.rd_en <= '1';
+                                -- ORC.B, extra code in instructionm bit 24 to 20 (== RS2)
+                                elsif func3_v = "101" and func7_v = "0010100" and rs2_v = "00111" and HAVE_ZBB then
+                                    id_ex.alu_op <= alu_orcb;
+                                    id_ex.rd_en <= '1';
+                                -- RORI
+                                elsif func3_v = "101" and func7_v = "0110000" and HAVE_ZBB then
+                                    id_ex.alu_op <= alu_rori;
+                                    id_ex.rd_en <= '1';
+                                    id_ex.imm <= imm_shamt_v;
+                                    id_ex.isimm <= '1';
                                 else
                                     control.illegal_instruction_decode <= '1';
                                 end if;
@@ -1269,7 +1303,49 @@ begin
                                 elsif func3_v = "111" and func7_v = "0000111" and HAVE_ZICOND then
                                     id_ex.alu_op <= alu_czeronez;
                                     id_ex.rd_en <= '1';
-                               -- Multiply, divide, remainder
+                                -- ANDN
+                                elsif func3_v = "111" and func7_v = "0100000" and HAVE_ZBB then
+                                    id_ex.alu_op <= alu_andn;
+                                    id_ex.rd_en <= '1';
+                                -- ORN
+                                elsif func3_v = "110" and func7_v = "0100000" and HAVE_ZBB then
+                                    id_ex.alu_op <= alu_orn;
+                                    id_ex.rd_en <= '1';
+                                -- XNOR
+                                elsif func3_v = "100" and func7_v = "0100000" and HAVE_ZBB then
+                                    id_ex.alu_op <= alu_xnor;
+                                    id_ex.rd_en <= '1';
+                                -- ZEXT.H, extra code in instructionm bit 24 to 20 (== RS2)
+                                elsif func3_v = "100" and func7_v = "0000100" and rs2_v = "00000" and HAVE_ZBB then
+                                    id_ex.alu_op <= alu_zexth;
+                                    id_ex.rd_en <= '1';
+                                -- MAX (signed)
+                                elsif func3_v = "110" and func7_v = "0000101" and HAVE_ZBB then
+                                    id_ex.alu_op <= alu_max;
+                                    id_ex.rd_en <= '1';
+                                -- MAXU (unsigned)
+                                elsif func3_v = "111" and func7_v = "0000101" and HAVE_ZBB then
+                                    id_ex.alu_op <= alu_maxu;
+                                    id_ex.rd_en <= '1';
+                                    id_ex.isunsigned <= '1';
+                                -- MIN (signed)
+                                elsif func3_v = "100" and func7_v = "0000101" and HAVE_ZBB then
+                                    id_ex.alu_op <= alu_min;
+                                    id_ex.rd_en <= '1';
+                                -- MINU (unsigned)
+                                elsif func3_v = "101" and func7_v = "0000101" and HAVE_ZBB then
+                                    id_ex.alu_op <= alu_minu;
+                                    id_ex.rd_en <= '1';
+                                    id_ex.isunsigned <= '1';
+                                -- ROL
+                                elsif func3_v = "001" and func7_v = "0110000" and HAVE_ZBB then
+                                    id_ex.alu_op <= alu_rol;
+                                    id_ex.rd_en <= '1';
+                                -- ROR
+                                elsif func3_v = "101" and func7_v = "0110000" and HAVE_ZBB then
+                                    id_ex.alu_op <= alu_ror;
+                                    id_ex.rd_en <= '1';
+                                    -- Multiply, divide, remainder
                                 elsif func7_v = "0000001" then
                                     -- Set operation to multiply or divide/remainder
                                     -- func3 contains the real operation
@@ -1684,6 +1760,7 @@ begin
                         a_v := a_v(a_v'left-3 downto 0) & "000";
                     end if;
                     r_v := std_logic_vector(unsigned(a_v) + unsigned(b_v));
+                    valid_v := '1';
                 end if;
             when alu_sub =>
                 r_v := std_logic_vector(unsigned(a_v) - unsigned(b_v));
@@ -1697,6 +1774,21 @@ begin
             when alu_xor | alu_xori =>
                 r_v := a_v xor b_v;
                 valid_v := '1';
+            when alu_andn =>
+                if HAVE_ZBB then
+                    r_v := a_v and not b_v;
+                    valid_v := '1';
+                end if;
+            when alu_orn =>
+                if HAVE_ZBB then
+                    r_v := a_v or not b_v;
+                    valid_v := '1';
+                end if;
+            when alu_xnor =>
+                if HAVE_ZBB then
+                    r_v := a_v xor not b_v;
+                    valid_v := '1';
+                end if;
             when alu_czeroeqz =>
                 if HAVE_ZICOND then
                     if b_v = all_zeros_c then
@@ -1704,6 +1796,7 @@ begin
                     else
                         r_v := a_v;
                     end if;
+                    valid_v := '1';
                 end if;
             when alu_czeronez =>
                 if HAVE_ZICOND then
@@ -1712,6 +1805,23 @@ begin
                     else
                         r_v := a_v;
                     end if;
+                    valid_v := '1';
+                end if;
+            when alu_orcb =>
+                if HAVE_ZBB then
+                    if a_v(31 downto 24) /= "00000000" then
+                        r_v(31 downto 24) := "11111111";
+                    end if;
+                    if a_v(23 downto 16) /= "00000000" then
+                        r_v(23 downto 16) := "11111111";
+                    end if;
+                    if a_v(15 downto 8) /= "00000000" then
+                        r_v(15 downto 8) := "11111111";
+                    end if;
+                    if a_v(7 downto 0) /= "00000000" then
+                        r_v(7 downto 0) := "11111111";
+                    end if;
+                    valid_v := '1';
                 end if;
 
             -- Bit instructions
@@ -1720,36 +1830,64 @@ begin
                     bitsft_v := (others => '0');
                     bitsft_v(to_integer(unsigned(b_v(4 downto 0)))) := '1';
                     r_v := a_v and not bitsft_v;
-                 end if;
+                    valid_v := '1';
+                end if;
             when alu_binv | alu_binvi =>
                 if HAVE_ZBS then
                     bitsft_v := (others => '0');
                     bitsft_v(to_integer(unsigned(b_v(4 downto 0)))) := '1';
                     r_v := a_v xor bitsft_v;
-                 end if;
+                    valid_v := '1';
+                end if;
             when alu_bset | alu_bseti =>
                 if HAVE_ZBS then
                     bitsft_v := (others => '0');
                     bitsft_v(to_integer(unsigned(b_v(4 downto 0)))) := '1';
                     r_v := a_v or bitsft_v;
-                 end if;
+                    valid_v := '1';
+                end if;
             when alu_bext | alu_bexti =>
                 if HAVE_ZBS then
                     if a_v(to_integer(unsigned(b_v(4 downto 0)))) = '1' then
                         r_v(0) := '1';
                     end if;
-                 end if;
+                    valid_v := '1';
+                end if;
 
             -- Set if less-than
             when alu_slt | alu_sltu | alu_slti | alu_sltiu =>
                 r_v(0) := cmplt_v;
                 valid_v := '1';
 
-            -- Shifts et al
-            -- Shift left
-            when alu_sll | alu_slli =>
-                signs_v := all_zeros_c;
+            -- Minimum and maximum
+            when alu_min | alu_minu =>
+                if HAVE_ZBB then
+                    if cmplt_v = '1' then
+                        r_v := a_v;
+                    else
+                        r_v := b_v;
+                    end if;
+                    valid_v := '1';
+                end if;
+            when alu_max | alu_maxu =>
+                if HAVE_ZBB then
+                    if cmplt_v = '1' then
+                        r_v := b_v;
+                    else
+                        r_v := a_v;
+                    end if;
+                    valid_v := '1';
+                end if;
 
+            -- Shifts et al
+            -- Shift left, rotate_left
+            when alu_sll | alu_slli | alu_rol =>
+                signs_v := all_zeros_c;
+                if HAVE_ZBB then
+                    if id_ex.alu_op = alu_rol then
+                        signs_v := a_v;
+                    end if;
+                end if;
                 if b_v(4) = '1' then
                     a_v := a_v(a_v'left-16 downto 0) & signs_v(31 downto 16);
                     signs_v := signs_v(15 downto 0) & all_zeros_c(15 downto 0);
@@ -1771,10 +1909,12 @@ begin
                 end if;
                 r_v := a_v;
                 valid_v := '1';
-            -- Shift right
-            when alu_sra | alu_srl | alu_srai | alu_srli =>
+            -- Shift right, rotate_right
+            when alu_sra | alu_srai | alu_srl | alu_srli | alu_ror | alu_rori =>
                 if id_ex.alu_op = alu_srl or id_ex.alu_op = alu_srli then
                     signs_v := all_zeros_c;
+                elsif (id_ex.alu_op = alu_ror or id_ex.alu_op = alu_rori) and HAVE_ZBB then
+                    signs_v := a_v;
                 else
                     signs_v := (others => a_v(a_v'left));
                 end if;
@@ -1799,6 +1939,50 @@ begin
                 end if;
                 r_v := a_v;
                 valid_v := '1';
+
+            -- REV8
+            when alu_rev8 =>
+                if HAVE_ZBB then
+                    r_v := a_v(7 downto 0) & a_v(15 downto 8) & a_v(23 downto 16) & a_v(31 downto 24);
+                    valid_v := '1';
+                end if;
+
+            -- Counting bits
+            when alu_cpop =>
+                if HAVE_ZBB then
+                    r_v := count_ones(a_v);
+                    valid_v := '1';
+                end if;
+            when alu_clz =>
+                if HAVE_ZBB then
+                    r_v := count_leading_zeros(a_v);
+                    valid_v := '1';
+                end if;
+            when alu_ctz =>
+                if HAVE_ZBB then
+                    r_v := count_trailing_zeros(a_v);
+                    valid_v := '1';
+                end if;
+                
+            -- Sign/zero extension
+            when alu_sextb =>
+                if HAVE_ZBB then
+                    r_v := (others => a_v(7));
+                    r_v(7 downto 0) := a_v(7 downto 0);
+                    valid_v := '1';
+                end if;
+            when alu_sexth =>
+                if HAVE_ZBB then
+                    r_v := (others => a_v(15));
+                    r_v(15 downto 0) := a_v(15 downto 0);
+                    valid_v := '1';
+                end if;
+            when alu_zexth =>
+                if HAVE_ZBB then
+                    r_v := (others => '0');
+                    r_v(15 downto 0) := a_v(15 downto 0);
+                    valid_v := '1';
+                end if;
 
             when alu_lui =>
                 r_v := b_v;
@@ -2713,7 +2897,7 @@ begin
     csr_reg.misa(31 downto 13) <= x"4000" & "000";
     csr_reg.misa(12) <= '1' when HAVE_MULDIV else '0';
     csr_reg.misa(11 downto 4) <= x"10" when NUMBER_OF_REGISTERS = 32 else x"01";
-    csr_reg.misa(3 downto 0) <= x"0"; --x"2" when HAVE_ZBA and HAVE_ZBB and HAVE_ZBS else x"0";
+    csr_reg.misa(3 downto 0) <= x"2" when HAVE_ZBA and HAVE_ZBB and HAVE_ZBS else x"0";
 
     -- Custom read-only hardware description
     csr_reg.mxhw(00) <= '1'; -- GPIOA, always present
@@ -2746,7 +2930,7 @@ begin
     csr_reg.mxhw(27) <= boolean_to_std_logic(HAVE_OCD);
     csr_reg.mxhw(28) <= boolean_to_std_logic(HAVE_MSI);
     csr_reg.mxhw(29) <= '0'; -- not avail. boolean_to_std_logic(BUFFER_IO_RESPONSE);
-    csr_reg.mxhw(30) <= '0'; -- boolean_to_std_logic(HAVE_ZBB);
+    csr_reg.mxhw(30) <= boolean_to_std_logic(HAVE_ZBB);
     csr_reg.mxhw(31) <= boolean_to_std_logic(HAVE_CRC);
 
     -- Custom read-only synthesized clock frequency
