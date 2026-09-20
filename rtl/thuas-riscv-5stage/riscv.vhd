@@ -177,9 +177,9 @@ component core is
           HAVE_RISCV_E : boolean;
           -- Have On-chip debugger?
           HAVE_OCD : boolean;
-          -- Disable CSR address check when in debug mode
+          -- If bootloader enabled, adjust the boot address
           HAVE_BOOTLOADER_ROM : boolean;
-          -- 4 high bits of ROM address
+          -- Disable CSR address check when in debug mode
           OCD_CSR_CHECK_DISABLE : boolean;
           -- Do we have the integer multiply/divide unit?
           HAVE_MULDIV : boolean;
@@ -203,7 +203,7 @@ component core is
           VECTORED_MTVEC : boolean;
           -- Do we have registers is RAM?
           HAVE_REGISTERS_IN_RAM : boolean;
-          -- If bootloader enabled, adjust the boot address
+          -- 4 high bits of ROM address
           ROM_HIGH_NIBBLE : memory_high_nibble;
           -- 4 high bits of boot ROM address
           BOOT_HIGH_NIBBLE : memory_high_nibble;
@@ -275,9 +275,7 @@ component address_decode is
           -- 4 high bits of I/O address
           IO_HIGH_NIBBLE : memory_high_nibble
          );
-    port (I_clk : in std_logic;
-          I_areset : in std_logic;
-          I_sreset : in std_logic;
+    port (
           -- From and to core
           I_bus_request : in bus_request_type;
           O_bus_response : out bus_response_type; 
@@ -736,7 +734,6 @@ begin
     -- Checks for generics
     assert not FAST_MEM report "FAST_MEM not implemented" severity warning;
     assert not FAST_DIVIDE report "FAST_DIVIDE not implemented" severity warning;
-    assert not HAVE_ZBB report "Zbb not implemented" severity warning;
     assert not HAVE_ZBKB report "Zbkb not implemented" severity warning;
     assert not HAVE_ZIHPM report "Zihpm performance counters not implemented" severity warning;
     assert not HAVE_REGISTERS_IN_RAM report "HAVE_REGISTERS_IN_RAM not implemented, registers always in RAM" severity warning;
@@ -795,8 +792,8 @@ begin
         areset_sys_int <= '0';
         areset_debug_int <= '0';
     end generate;
- 
- 
+
+
     core0: core
     generic map (
               SYSTEM_FREQUENCY => SYSTEM_FREQUENCY,
@@ -866,10 +863,7 @@ begin
               RAM_HIGH_NIBBLE => RAM_HIGH_NIBBLE,
               IO_HIGH_NIBBLE => IO_HIGH_NIBBLE
              )
-    port map (I_clk => clk_int,
-              I_areset => areset_sys_int,
-              I_sreset => sreset_sys_int,
-              --
+    port map (
               I_bus_request => bus_request_int,
               O_bus_response => bus_response_int,
               --
@@ -929,7 +923,7 @@ begin
     generic map (
               MEMORY_ADDRESS_BITS => 12,
               MEMORY_USE_INSTRUCTIONS => TRUE,
-              MEMORY_USE_WRITE => HAVE_INST_IN_RAM,
+              MEMORY_USE_WRITE => false,
               MEMORY_CONTENTS => bootrom_contents,
               MEMORY_DEFAULT => '0',
               MEMORY_FILE => "UNUSED"
