@@ -58,13 +58,11 @@ entity address_decode is
           -- 4 high bits of I/O address
           IO_HIGH_NIBBLE : memory_high_nibble
          );
-    port (I_clk : in std_logic;
-          I_areset : in std_logic;
-          I_sreset : in std_logic;
+    port (
           -- From and to core
           I_bus_request : in bus_request_type;
           O_bus_response : out bus_response_type; 
-          -- To and tp memory
+          -- To and to memory
           O_mem_request_rom : out mem_request_type;
           O_mem_request_boot : out mem_request_type;
           O_mem_request_ram : out mem_request_type;
@@ -185,7 +183,7 @@ begin
         end if;
     end process;
 
-    
+
     -- Fuse data from memories, memory must return zero bits when not accessed
     O_bus_response.data <= I_mem_response_rom.data or I_mem_response_boot.data or
                            I_mem_response_ram.data or I_mem_response_io.data;
