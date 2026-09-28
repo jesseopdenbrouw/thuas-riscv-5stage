@@ -52,8 +52,8 @@ All debug files (e.g. `openocd.cfg`) from the https://github.com/jesseopdenbrouw
 
 == Other entities
 
-Besides the core, also the riscv top-level, the IO decoder, the
-memory decoder and the generic memory module
+Besides the core, also the riscv top-level, the IO decoder
+and the generic memory module
 are adapted. All other entities are the same as
 with the 3-stage pipelined SoC (notebly the I/O).
 
