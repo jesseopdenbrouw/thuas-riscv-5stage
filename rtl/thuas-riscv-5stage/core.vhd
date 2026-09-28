@@ -692,6 +692,10 @@ begin
 
     -- Forwarding: check if we need forwarding data
     -- Extra stage to bypass register file (WB/BP)
+    -- There is no need to check for rd = 0, because
+    -- the rd_en signal is set to 0 if rd = 0 in the
+    -- ID stage, so farwarding will fall back to the
+    -- register file
     process (id_ex, ex_mem, mem_wb, wb_bp) is
     begin
         if id_ex.rs1 = ex_mem.rd and ex_mem.rd_en = '1' then
