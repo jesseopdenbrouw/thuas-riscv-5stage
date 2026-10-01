@@ -156,6 +156,9 @@ constant SIMULATION_EXTRA : boolean := false;
 -- Not part of any record.
 -- Make sure to start with the correct PC direct after download to target
 signal pc : data_type := get_std_logic_vector_from_boolean(HAVE_BOOTLOADER_ROM, BOOT_HIGH_NIBBLE, ROM_HIGH_NIBBLE) & x"0000000";
+-- Behavior of the Program Counter
+type pc_op_type is (pc_incr, pc_hold, pc_loadoffset, pc_loadoffsetregister,
+                    pc_branch, pc_load_mepc, pc_load_mtvec);
 
 -- IF/ID signals for Instruction Decode stage
 type if_id_type is record
@@ -165,11 +168,7 @@ type if_id_type is record
 end record if_id_type;
 signal if_id : if_id_type;
 
-
 -- ID/EX signals for Execute stage
--- Behavior of the Program Counter
-type pc_op_type is (pc_incr, pc_hold, pc_loadoffset, pc_loadoffsetregister,
-                    pc_branch, pc_load_mepc, pc_load_mtvec);
 type id_ex_type is record
     -- Generic signals
     instr : data_type;
@@ -202,7 +201,9 @@ type id_ex_type is record
     -- Test signals can be removed
     -- Instruction execute valid
     valid : std_logic;
+-- synthesis translate_off
     a, b, c, r : data_type;
+-- synthesis translate_on
 end record id_ex_type;
 signal id_ex : id_ex_type;
 
@@ -225,7 +226,6 @@ type ex_mem_type is record
     valid : std_logic;
 end record ex_mem_type;
 signal ex_mem : ex_mem_type;
-
 
 --MEM/WB stage
 type mem_wb_type is record
@@ -370,9 +370,6 @@ type csr_reg_type is record
     mie : data_type;
     mip : data_type;
     mcause : data_type;
-    -- Custom read-ony
-    mxhw : data_type;
-    mxspeed : data_type;
     -- Debug related
     dcsr : data_type;
     dpc : data_type;
@@ -381,6 +378,9 @@ type csr_reg_type is record
     tdata2 : data_type;
     tinfo : data_type;
     dcsr_cause : std_logic_vector(3 downto 0);    
+    -- Custom read-ony
+    mxhw : data_type;
+    mxspeed : data_type;
 end record csr_reg_type;
 signal csr_reg : csr_reg_type;
 
@@ -1670,7 +1670,7 @@ begin
     begin
         -- Get data
         if control.forwarda = "10" then
-            a_v := ex_mem.rs1data;
+            a_v := ex_mem.rs1data; -- !note: from register RS1, this contains the ALU result
         elsif control.forwarda = "01" then
             a_v := mem_wb.rddata;
         elsif control.forwarda = "11" then
@@ -1740,12 +1740,12 @@ begin
                     valid_v := '1';
                 end if;
 
-            -- FENCE. WFI
+            -- FENCE, FENCE.I, WFI
             when alu_fence | alu_wfi =>
                 valid_v := '1';
 
            -- Return from trap, dirty trick, needs to be revised.
-           -- This sets the branch penalty, which causes a flush
+           -- This sets the branch penalty, which causes a flush.
             when alu_mret =>
                 control.penalty <= '1';
                 valid_v := '1';
@@ -2028,13 +2028,13 @@ begin
             when alu_multiply =>
                 r_v := md.mul;
                 -- Wait for MUL/DIV to complete
-                if control.state = state_md2 then valid_v := '1'; else valid_v := '0'; end if;
+                if control.state = state_md2 then valid_v := '1'; end if;
                 
             -- Pass data from divider
             when alu_divrem =>
                 r_v := md.div;
                 -- Wait for MUL/DIV to complete
-                if control.state = state_md2 then valid_v := '1'; else valid_v := '0'; end if;
+                if control.state = state_md2 then valid_v := '1'; end if;
 
             -- Pass data from CSR
             when alu_csr =>
@@ -2263,7 +2263,7 @@ begin
         begin
             -- Check if forwarding result is needed
             if control.forwarda = "10" then
-                a_v := ex_mem.rs1data;
+                a_v := ex_mem.rs1data; -- !note: from register RS1
             elsif control.forwarda = "01" then
                 a_v := mem_wb.rddata;
             elsif control.forwarda = "11" then
@@ -2348,7 +2348,7 @@ begin
         begin
             -- Check if forwarding result is needed
             if control.forwarda = "10" then
-                a_v := ex_mem.rs1data;
+                a_v := ex_mem.rs1data; -- !note: from register RS1
             elsif control.forwarda = "01" then
                 a_v := mem_wb.rddata;
             elsif control.forwarda = "11" then
@@ -2781,7 +2781,7 @@ begin
                 if HAVE_OCD then
                     -- Debug registers
                     csr_reg.dcsr(1 downto 0) <= "11";                -- Alwyas M-mode
-                    csr_reg.dcsr(3) <= '0';                          -- NMI interrupt pending not used
+                    csr_reg.dcsr(3) <= I_intrio(31);                 -- NMI interrupt pending
                     csr_reg.dcsr(4) <= '0';                          -- mpriven not used
                     csr_reg.dcsr(5) <= '0';                          -- v not used
                     csr_reg.dcsr(9) <= '0';                          -- stoptime not used

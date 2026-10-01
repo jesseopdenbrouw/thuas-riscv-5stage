@@ -24,4 +24,5 @@ All dates are in dd.mm.yyyy format.
 | 13-09-2026 | 2.0.0.8  | [mem/address] all memories now return zero when not accessed, addres decoder now fuses returns from memory and I/O | |
 | 18-09-2026 | 2.0.0.9  | [io_bust_switch] fuse all I/O output | |
 | 19-09-2026 | 2.0.0.10 | [core] implemented Zbb | |
+| 01-10-2026 | 2.0.0.11 | [core] dcsr.NMIP reflects NMI pending | |
 
