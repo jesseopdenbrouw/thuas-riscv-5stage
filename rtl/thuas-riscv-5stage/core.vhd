@@ -613,10 +613,10 @@ begin
     control.stall_on_debug <= '1' when (control.state = state_exec and I_halt_req = '1' and HAVE_OCD) or
                                        (control.state = state_exec and control.bpmatch = '1' and control.skip_match = '0' and HAVE_OCD) or
                                        (control.state = state_exec and control.ebreak_request = '1' and csr_reg.dcsr(15) = '1' and HAVE_OCD) or
+                                       (control.state = state_exec and control.isstepping = '1' and control.step = '0' and HAVE_OCD) or
                                        (control.state = state_debugpre1 and HAVE_OCD) or
                                        (control.state = state_debugpre2 and HAVE_OCD) or
-                                       (control.state = state_debug and HAVE_OCD) or
-                                       (control.state = state_exec and control.isstepping = '1' and control.step = '0' and HAVE_OCD)
+                                       (control.state = state_debug and HAVE_OCD)
                                   else '0';
                                   
     -- In debug mode
@@ -806,6 +806,10 @@ begin
     -- For fetching instructions
     O_instr_request.pc <= pc;
 
+
+    --
+    -- ID stage
+    --
     
     -- The PC at the fetched instruction
     process (I_clk, I_areset) is
@@ -830,10 +834,7 @@ begin
     end process;
     
     
-    --
-    -- ID stage: instruction decode block
-    --
-   
+    -- Instrucion decode block
     process (I_clk, I_areset, I_instr_response, control, id_ex) is
     variable opcode_v : std_logic_vector(6 downto 0);
     variable func3_v : std_logic_vector(2 downto 0);
@@ -979,8 +980,8 @@ begin
                     id_ex.memaccess <= memaccess_nop;
                     id_ex.memsize <= memsize_unknown;
                     id_ex.csr_op <= csr_nop;
-                    id_ex.csr_addr <= (others => '0');
-                    id_ex.csr_immrs1 <= (others => '0');
+                    id_ex.csr_addr <= imm_i_v(11 downto 0); -- always assign
+                    id_ex.csr_immrs1 <= rs1_v; -- always assign
                     control.ecall_request <= '0';
                     control.ebreak_request <= '0';
                     control.mret_request <= '0';
@@ -1012,7 +1013,7 @@ begin
                     id_ex.isstore <= '0';
 
                 -- Check if we have a stall, but not due to load hazard
-                -- Stall here only for MD operation. A load hazard will
+                -- Stall here only for MD or WFI operation. A load hazard will
                 -- trigger a flush.
                 elsif control.stall = '1' and control.loadhazard = '0' then
                     -- Set id_ex.md_start to 0. It is already registered.

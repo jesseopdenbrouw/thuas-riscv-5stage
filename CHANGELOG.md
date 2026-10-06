@@ -25,4 +25,5 @@ All dates are in dd.mm.yyyy format.
 | 18-09-2026 | 2.0.0.9  | [io_bust_switch] fuse all I/O output | |
 | 19-09-2026 | 2.0.0.10 | [core] implemented Zbb | |
 | 01-10-2026 | 2.0.0.11 | [core] dcsr.NMIP reflects NMI pending | |
+| 06-10-2026 | 2.0.0.12 | [core] make CSR addr/imm default from instruction | |
 
