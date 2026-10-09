@@ -26,4 +26,5 @@ All dates are in dd.mm.yyyy format.
 | 19-09-2026 | 2.0.0.10 | [core] implemented Zbb | |
 | 01-10-2026 | 2.0.0.11 | [core] dcsr.NMIP reflects NMI pending | |
 | 06-10-2026 | 2.0.0.12 | [core] make CSR addr/imm default from instruction | |
+| 09-10-2026 | 2.0.0.13 | [core] removed signal triggering if_id.pc | |
 
