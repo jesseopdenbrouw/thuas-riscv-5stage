@@ -106,10 +106,6 @@ architecture rtl of io_bus_switch is
 -- 256 bytes per device
 constant ADDRESS_SIZE_LOG2 : integer := 8;
 
--- Select I/O device for response on read one clock later
-signal sel_io : std_logic_vector(3 downto 0);
-constant SELECT_IOMUX : boolean := false;
-
 begin
 
     
@@ -279,254 +275,113 @@ begin
         
     end process;
 
-    select_iomux_gen: if SELECT_IOMUX generate
-        -- Select the addressed I/O peripheral for response data next clock cycle
-        process (I_clk, I_areset) is
-        begin
-            if I_areset = '1' then
-                sel_io <= (others => '0');
-            elsif rising_edge(I_clk) then
-                if I_sreset = '1' then
-                    sel_io <= (others => '0');
-                else
-                    sel_io <= I_mem_request.addr(ADDRESS_SIZE_LOG2+3 downto ADDRESS_SIZE_LOG2);
-                end if;
-            end if;
-        end process;
-        
-        -- Select response data, which is one clock after the load access
-        process (sel_io, I_dev0_response, I_dev1_response, I_dev2_response, I_dev3_response,
-                 I_dev4_response, I_dev5_response, I_dev6_response, I_dev7_response, I_dev8_response,
-                 I_dev9_response, I_dev10_response, I_dev11_response, I_dev12_response, I_dev13_response,
-                 I_dev14_response, I_dev15_response, I_mem_request) is
-        begin
-            case sel_io is
-                when "0000" => O_mem_response.data <= I_dev0_response.data;
-                               O_mem_response.ready <= I_dev0_response.ready;
-                when "0001" => O_mem_response.data <= I_dev1_response.data;
-                               O_mem_response.ready <= I_dev1_response.ready;
-                when "0010" => O_mem_response.data <= I_dev2_response.data;
-                               O_mem_response.ready <= I_dev2_response.ready;
-                when "0011" => O_mem_response.data <= I_dev3_response.data;
-                               O_mem_response.ready <= I_dev3_response.ready;
-                when "0100" => O_mem_response.data <= I_dev4_response.data;
-                               O_mem_response.ready <= I_dev4_response.ready;
-                when "0101" => O_mem_response.data <= I_dev5_response.data;
-                               O_mem_response.ready <= I_dev5_response.ready;
-                when "0110" => O_mem_response.data <= I_dev6_response.data;
-                               O_mem_response.ready <= I_dev6_response.ready;
-                when "0111" => O_mem_response.data <= I_dev7_response.data;
-                               O_mem_response.ready <= I_dev7_response.ready;
-                when "1000" => O_mem_response.data <= I_dev8_response.data;
-                               O_mem_response.ready <= I_dev8_response.ready;
-                when "1001" => O_mem_response.data <= I_dev9_response.data;
-                               O_mem_response.ready <= I_dev9_response.ready;
-                when "1010" => O_mem_response.data <= I_dev10_response.data;
-                               O_mem_response.ready <= I_dev10_response.ready;
-                when "1011" => O_mem_response.data <= I_dev11_response.data;
-                               O_mem_response.ready <= I_dev11_response.ready;
-                when "1100" => O_mem_response.data <= I_dev12_response.data;
-                               O_mem_response.ready <= I_dev12_response.ready;
-                when "1101" => O_mem_response.data <= I_dev13_response.data;
-                               O_mem_response.ready <= I_dev13_response.ready;
-                when "1110" => O_mem_response.data <= I_dev14_response.data;
-                               O_mem_response.ready <= I_dev14_response.ready;
-                when "1111" => O_mem_response.data <= I_dev15_response.data;
-                               O_mem_response.ready <= I_dev15_response.ready;
-                when others => O_mem_response.data <= all_zeros_c;
-                               O_mem_response.ready <= '0';
-            end case;
-            if I_mem_request.stb = '1' then
-                -- Get the exception response, which is ON the memory access
-                case I_mem_request.addr(ADDRESS_SIZE_LOG2+3 downto ADDRESS_SIZE_LOG2) is
-                    when "0000" => O_mem_response.load_misaligned_error <= I_dev0_response.load_misaligned_error;
-                                   O_mem_response.store_misaligned_error <= I_dev0_response.store_misaligned_error;
-                                   O_mem_response.load_access_error <= I_dev0_response.load_access_error;
-                                   O_mem_response.store_access_error <= I_dev0_response.store_access_error;
-                    when "0001" => O_mem_response.load_misaligned_error <= I_dev1_response.load_misaligned_error;
-                                   O_mem_response.store_misaligned_error <= I_dev1_response.store_misaligned_error;
-                                   O_mem_response.load_access_error <= I_dev1_response.load_access_error;
-                                   O_mem_response.store_access_error <= I_dev1_response.store_access_error;
-                    when "0010" => O_mem_response.load_misaligned_error <= I_dev2_response.load_misaligned_error;
-                                   O_mem_response.store_misaligned_error <= I_dev2_response.store_misaligned_error;
-                                   O_mem_response.load_access_error <= I_dev2_response.load_access_error;
-                                   O_mem_response.store_access_error <= I_dev2_response.store_access_error;
-                    when "0011" => O_mem_response.load_misaligned_error <= I_dev3_response.load_misaligned_error;
-                                   O_mem_response.store_misaligned_error <= I_dev3_response.store_misaligned_error;
-                                   O_mem_response.load_access_error <= I_dev3_response.load_access_error;
-                                   O_mem_response.store_access_error <= I_dev3_response.store_access_error;
-                    when "0100" => O_mem_response.load_misaligned_error <= I_dev4_response.load_misaligned_error;
-                                   O_mem_response.store_misaligned_error <= I_dev4_response.store_misaligned_error;
-                                   O_mem_response.load_access_error <= I_dev4_response.load_access_error;
-                                   O_mem_response.store_access_error <= I_dev4_response.store_access_error;
-                    when "0101" => O_mem_response.load_misaligned_error <= I_dev5_response.load_misaligned_error;
-                                   O_mem_response.store_misaligned_error <= I_dev5_response.store_misaligned_error;
-                                   O_mem_response.load_access_error <= I_dev5_response.load_access_error;
-                                   O_mem_response.store_access_error <= I_dev5_response.store_access_error;
-                    when "0110" => O_mem_response.load_misaligned_error <= I_dev6_response.load_misaligned_error;
-                                   O_mem_response.store_misaligned_error <= I_dev6_response.store_misaligned_error;
-                                   O_mem_response.load_access_error <= I_dev6_response.load_access_error;
-                                   O_mem_response.store_access_error <= I_dev6_response.store_access_error;
-                    when "0111" => O_mem_response.load_misaligned_error <= I_dev7_response.load_misaligned_error;
-                                   O_mem_response.store_misaligned_error <= I_dev7_response.store_misaligned_error;
-                                   O_mem_response.load_access_error <= I_dev7_response.load_access_error;
-                                   O_mem_response.store_access_error <= I_dev7_response.store_access_error;
-                    when "1000" => O_mem_response.load_misaligned_error <= I_dev8_response.load_misaligned_error;
-                                   O_mem_response.store_misaligned_error <= I_dev8_response.store_misaligned_error;
-                                   O_mem_response.load_access_error <= I_dev8_response.load_access_error;
-                                   O_mem_response.store_access_error <= I_dev8_response.store_access_error;
-                    when "1001" => O_mem_response.load_misaligned_error <= I_dev9_response.load_misaligned_error;
-                                   O_mem_response.store_misaligned_error <= I_dev9_response.store_misaligned_error;
-                                   O_mem_response.load_access_error <= I_dev9_response.load_access_error;
-                                   O_mem_response.store_access_error <= I_dev9_response.store_access_error;
-                    when "1010" => O_mem_response.load_misaligned_error <= I_dev10_response.load_misaligned_error;
-                                   O_mem_response.store_misaligned_error <= I_dev10_response.store_misaligned_error;
-                                   O_mem_response.load_access_error <= I_dev10_response.load_access_error;
-                                   O_mem_response.store_access_error <= I_dev10_response.store_access_error;
-                    when "1011" => O_mem_response.load_misaligned_error <= I_dev11_response.load_misaligned_error;
-                                   O_mem_response.store_misaligned_error <= I_dev11_response.store_misaligned_error;
-                                   O_mem_response.load_access_error <= I_dev11_response.load_access_error;
-                                   O_mem_response.store_access_error <= I_dev11_response.store_access_error;
-                    when "1100" => O_mem_response.load_misaligned_error <= I_dev12_response.load_misaligned_error;
-                                   O_mem_response.store_misaligned_error <= I_dev12_response.store_misaligned_error;
-                                   O_mem_response.load_access_error <= I_dev12_response.load_access_error;
-                                   O_mem_response.store_access_error <= I_dev12_response.store_access_error;
-                    when "1101" => O_mem_response.load_misaligned_error <= I_dev13_response.load_misaligned_error;
-                                   O_mem_response.store_misaligned_error <= I_dev13_response.store_misaligned_error;
-                                   O_mem_response.load_access_error <= I_dev13_response.load_access_error;
-                                   O_mem_response.store_access_error <= I_dev13_response.store_access_error;
-                    when "1110" => O_mem_response.load_misaligned_error <= I_dev14_response.load_misaligned_error;
-                                   O_mem_response.store_misaligned_error <= I_dev14_response.store_misaligned_error;
-                                   O_mem_response.load_access_error <= I_dev14_response.load_access_error;
-                                   O_mem_response.store_access_error <= I_dev14_response.store_access_error;
-                    when "1111" => O_mem_response.load_misaligned_error <= I_dev15_response.load_misaligned_error;
-                                   O_mem_response.store_misaligned_error <= I_dev15_response.store_misaligned_error;
-                                   O_mem_response.load_access_error <= I_dev15_response.load_access_error;
-                                   O_mem_response.store_access_error <= I_dev15_response.store_access_error;
-                    when others => O_mem_response.load_misaligned_error <= '0';
-                                   O_mem_response.store_misaligned_error <= '0';
-                                   O_mem_response.load_access_error <= '0';
-                                   O_mem_response.store_access_error <= '0';
-                end case;
-            else
-                O_mem_response.load_misaligned_error <= '0';
-                O_mem_response.store_misaligned_error <= '0';
-                O_mem_response.load_access_error <= '0';
-                O_mem_response.store_access_error <= '0';
-            end if;
-
-        end process;
-    end generate;
     
+    -- Fuse the responses. Max only one I/O device is responding,
+    -- all non-responding devices send zero bits
+    -- Fuse all response data
+    O_mem_response.data <= I_dev0_response.data or
+                           I_dev1_response.data or
+                           I_dev2_response.data or
+                           I_dev3_response.data or
+                           I_dev4_response.data or
+                           I_dev5_response.data or
+                           I_dev6_response.data or
+                           I_dev7_response.data or
+                           I_dev8_response.data or
+                           I_dev9_response.data or
+                           I_dev10_response.data or
+                           I_dev11_response.data or
+                           I_dev12_response.data or
+                           I_dev13_response.data or
+                           I_dev14_response.data or
+                           I_dev15_response.data;
+                           
+    -- Fuse all response readies
+    O_mem_response.ready <= I_dev0_response.ready or
+                            I_dev1_response.ready or
+                            I_dev2_response.ready or
+                            I_dev3_response.ready or
+                            I_dev4_response.ready or
+                            I_dev5_response.ready or
+                            I_dev6_response.ready or
+                            I_dev7_response.ready or
+                            I_dev8_response.ready or
+                            I_dev9_response.ready or
+                            I_dev10_response.ready or
+                            I_dev11_response.ready or
+                            I_dev12_response.ready or
+                            I_dev13_response.ready or
+                            I_dev14_response.ready or
+                            I_dev15_response.ready;
+
+    -- Fuse all response misaligneds
+    O_mem_response.load_misaligned_error <= I_dev0_response.load_misaligned_error or
+                                            I_dev1_response.load_misaligned_error or
+                                            I_dev2_response.load_misaligned_error or
+                                            I_dev3_response.load_misaligned_error or
+                                            I_dev4_response.load_misaligned_error or
+                                            I_dev5_response.load_misaligned_error or
+                                            I_dev6_response.load_misaligned_error or
+                                            I_dev7_response.load_misaligned_error or
+                                            I_dev8_response.load_misaligned_error or
+                                            I_dev9_response.load_misaligned_error or
+                                            I_dev10_response.load_misaligned_error or
+                                            I_dev11_response.load_misaligned_error or
+                                            I_dev12_response.load_misaligned_error or
+                                            I_dev13_response.load_misaligned_error or
+                                            I_dev14_response.load_misaligned_error or
+                                            I_dev15_response.load_misaligned_error;
     
-    select_iomux_gen_not: if not SELECT_IOMUX generate
-        -- Fuse the responses. Max only one I/O device is responding,
-        -- all non-responding devices send zero bits
-        -- Fuse all response data
-        O_mem_response.data <= I_dev0_response.data or
-                               I_dev1_response.data or
-                               I_dev2_response.data or
-                               I_dev3_response.data or
-                               I_dev4_response.data or
-                               I_dev5_response.data or
-                               I_dev6_response.data or
-                               I_dev7_response.data or
-                               I_dev8_response.data or
-                               I_dev9_response.data or
-                               I_dev10_response.data or
-                               I_dev11_response.data or
-                               I_dev12_response.data or
-                               I_dev13_response.data or
-                               I_dev14_response.data or
-                               I_dev15_response.data;
-                               
-        -- Fuse all response readies
-        O_mem_response.ready <= I_dev0_response.ready or
-                                I_dev1_response.ready or
-                                I_dev2_response.ready or
-                                I_dev3_response.ready or
-                                I_dev4_response.ready or
-                                I_dev5_response.ready or
-                                I_dev6_response.ready or
-                                I_dev7_response.ready or
-                                I_dev8_response.ready or
-                                I_dev9_response.ready or
-                                I_dev10_response.ready or
-                                I_dev11_response.ready or
-                                I_dev12_response.ready or
-                                I_dev13_response.ready or
-                                I_dev14_response.ready or
-                                I_dev15_response.ready;
+    O_mem_response.store_misaligned_error <= I_dev0_response.store_misaligned_error or
+                                             I_dev1_response.store_misaligned_error or
+                                             I_dev2_response.store_misaligned_error or
+                                             I_dev3_response.store_misaligned_error or
+                                             I_dev4_response.store_misaligned_error or
+                                             I_dev5_response.store_misaligned_error or
+                                             I_dev6_response.store_misaligned_error or
+                                             I_dev7_response.store_misaligned_error or
+                                             I_dev8_response.store_misaligned_error or
+                                             I_dev9_response.store_misaligned_error or
+                                             I_dev10_response.store_misaligned_error or
+                                             I_dev11_response.store_misaligned_error or
+                                             I_dev12_response.store_misaligned_error or
+                                             I_dev13_response.store_misaligned_error or
+                                             I_dev14_response.store_misaligned_error or
+                                             I_dev15_response.store_misaligned_error;
 
-        -- Fuse all response misaligneds
-        O_mem_response.load_misaligned_error <= I_dev0_response.load_misaligned_error or
-                                                I_dev1_response.load_misaligned_error or
-                                                I_dev2_response.load_misaligned_error or
-                                                I_dev3_response.load_misaligned_error or
-                                                I_dev4_response.load_misaligned_error or
-                                                I_dev5_response.load_misaligned_error or
-                                                I_dev6_response.load_misaligned_error or
-                                                I_dev7_response.load_misaligned_error or
-                                                I_dev8_response.load_misaligned_error or
-                                                I_dev9_response.load_misaligned_error or
-                                                I_dev10_response.load_misaligned_error or
-                                                I_dev11_response.load_misaligned_error or
-                                                I_dev12_response.load_misaligned_error or
-                                                I_dev13_response.load_misaligned_error or
-                                                I_dev14_response.load_misaligned_error or
-                                                I_dev15_response.load_misaligned_error;
-        
-        O_mem_response.store_misaligned_error <= I_dev0_response.store_misaligned_error or
-                                                 I_dev1_response.store_misaligned_error or
-                                                 I_dev2_response.store_misaligned_error or
-                                                 I_dev3_response.store_misaligned_error or
-                                                 I_dev4_response.store_misaligned_error or
-                                                 I_dev5_response.store_misaligned_error or
-                                                 I_dev6_response.store_misaligned_error or
-                                                 I_dev7_response.store_misaligned_error or
-                                                 I_dev8_response.store_misaligned_error or
-                                                 I_dev9_response.store_misaligned_error or
-                                                 I_dev10_response.store_misaligned_error or
-                                                 I_dev11_response.store_misaligned_error or
-                                                 I_dev12_response.store_misaligned_error or
-                                                 I_dev13_response.store_misaligned_error or
-                                                 I_dev14_response.store_misaligned_error or
-                                                 I_dev15_response.store_misaligned_error;
-
-        -- Fuse all response access errors
-        O_mem_response.load_access_error <= I_dev0_response.load_access_error or
-                                            I_dev1_response.load_access_error or
-                                            I_dev2_response.load_access_error or
-                                            I_dev3_response.load_access_error or
-                                            I_dev4_response.load_access_error or
-                                            I_dev5_response.load_access_error or
-                                            I_dev6_response.load_access_error or
-                                            I_dev7_response.load_access_error or
-                                            I_dev8_response.load_access_error or
-                                            I_dev9_response.load_access_error or
-                                            I_dev10_response.load_access_error or
-                                            I_dev11_response.load_access_error or
-                                            I_dev12_response.load_access_error or
-                                            I_dev13_response.load_access_error or
-                                            I_dev14_response.load_access_error or
-                                            I_dev15_response.load_access_error;
-        
-        O_mem_response.store_access_error <= I_dev0_response.store_access_error or
-                                             I_dev1_response.store_access_error or
-                                             I_dev2_response.store_access_error or
-                                             I_dev3_response.store_access_error or
-                                             I_dev4_response.store_access_error or
-                                             I_dev5_response.store_access_error or
-                                             I_dev6_response.store_access_error or
-                                             I_dev7_response.store_access_error or
-                                             I_dev8_response.store_access_error or
-                                             I_dev9_response.store_access_error or
-                                             I_dev10_response.store_access_error or
-                                             I_dev11_response.store_access_error or
-                                             I_dev12_response.store_access_error or
-                                             I_dev13_response.store_access_error or
-                                             I_dev14_response.store_access_error or
-                                             I_dev15_response.store_access_error;
-    end generate;
+    -- Fuse all response access errors
+    O_mem_response.load_access_error <= I_dev0_response.load_access_error or
+                                        I_dev1_response.load_access_error or
+                                        I_dev2_response.load_access_error or
+                                        I_dev3_response.load_access_error or
+                                        I_dev4_response.load_access_error or
+                                        I_dev5_response.load_access_error or
+                                        I_dev6_response.load_access_error or
+                                        I_dev7_response.load_access_error or
+                                        I_dev8_response.load_access_error or
+                                        I_dev9_response.load_access_error or
+                                        I_dev10_response.load_access_error or
+                                        I_dev11_response.load_access_error or
+                                        I_dev12_response.load_access_error or
+                                        I_dev13_response.load_access_error or
+                                        I_dev14_response.load_access_error or
+                                        I_dev15_response.load_access_error;
+    
+    O_mem_response.store_access_error <= I_dev0_response.store_access_error or
+                                         I_dev1_response.store_access_error or
+                                         I_dev2_response.store_access_error or
+                                         I_dev3_response.store_access_error or
+                                         I_dev4_response.store_access_error or
+                                         I_dev5_response.store_access_error or
+                                         I_dev6_response.store_access_error or
+                                         I_dev7_response.store_access_error or
+                                         I_dev8_response.store_access_error or
+                                         I_dev9_response.store_access_error or
+                                         I_dev10_response.store_access_error or
+                                         I_dev11_response.store_access_error or
+                                         I_dev12_response.store_access_error or
+                                         I_dev13_response.store_access_error or
+                                         I_dev14_response.store_access_error or
+                                         I_dev15_response.store_access_error;
     
 end architecture rtl;

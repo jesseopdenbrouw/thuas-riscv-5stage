@@ -266,7 +266,7 @@ if {[find signal -r */ram0/mem_alt] != ""} {
 add wave -divider "IO"
 add wave            -label IO_mem_request dut/mem_request_io_int
 add wave            -label IO_mem_response dut/mem_response_io_int
-add wave            -label sel_io dut/io_bus_switch0/sel_io
+#add wave            -label sel_io dut/io_bus_switch0/sel_io
 add wave -radix hex -label gpioa_rec dut/gpioa/gpio
 add wave -radix hex -label mtime_rec dut/mtime1/mtime
 if {[find signal -r */uart1gen/*] != ""} {
