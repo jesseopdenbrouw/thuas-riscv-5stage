@@ -10,7 +10,7 @@ Current Coremark testbench shows a CPI of 1.38 and a score of 2.46 coremarks/MHz
 
 Below is the block diagram of the 5-stage pipelined core.
 
-.Block diagram of the core. +
+.Block diagram of the core.
 [[fig_core]]
 image::images/core_5stage.svg[Image of core]
 
