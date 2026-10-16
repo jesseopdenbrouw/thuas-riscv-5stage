@@ -6,7 +6,13 @@ All instructions from the "The RISC-V Instruction Set Manual Volume I, Unprivile
 
 Current Coremark testbench shows a CPI of 1.38 and a score of 2.46 coremarks/MHz (GCC 16.1, -O3, RV32IM). The SoC is developed on a Altera https://www.intel.com/content/www/us/en/products/details/fpga/cyclone/v.html[Cyclone V FPGA] using the Terasic https://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&No=921[DE0-CV board]. The current $f_{max}$ is 70+ MHz (standard setting) and 80+ MHz (performance aggressive).
 
-== The core
+== The Core
+
+Below is the block diagram ov the 5-stage pipelined core.
+
+.Block diagram of the core.
+[[fig_core]]
+image::images/core_5stage.svg[Image of core]
 
 The core is build around a classic 5-stage pipeline: IF, ID, EX, MEM and WB. Because not all block RAM memories give new data when read register is equal to write register (so not write-through) there is an extra stage (BP) that functions as bypass for the register file. The design does not use branch prediction.
 

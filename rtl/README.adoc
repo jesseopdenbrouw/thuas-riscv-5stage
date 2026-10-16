@@ -37,8 +37,6 @@ Please note the following:
 * The `BUFFER_IO_RESPONSE` generic is not implemented.
 * The `HAVE_REGISTERS_IN_RAM` generic is not implemented. The registers are always implemented with onboard RAM.
 * The `FAST_DIVIDE` generic is not implemented.
-* The `HAVE_ZBB` generic is not implemented.
 * The `HAVE_ZBKB` generic is not implemented.
-* The `HAVE_ZIMOP` generic is not implemented
 * The `HAVE_ZIHPM` generic is not implemented.
 
