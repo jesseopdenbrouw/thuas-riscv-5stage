@@ -14,7 +14,7 @@ Below is the block diagram of the 5-stage pipelined core.
 [[fig_core]]
 image::images/core_5stage.svg[Image of core]
 
- +
+
 The core is build around a classic 5-stage pipeline: IF, ID, EX, MEM and WB. Because not all block RAM memories give new data when read register is equal to write register (so not write-through) there is an extra stage (BP) that functions as bypass for the register file. The design does not use branch prediction.
 
 All programs for the https://github.com/jesseopdenbrouw/thuas-riscv[3-stage SoC] also run on the 5-stage SoC.
