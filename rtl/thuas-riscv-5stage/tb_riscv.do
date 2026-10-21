@@ -87,6 +87,7 @@ vcom -93 -work work ${prefix}mtime.vhd
 vcom -93 -work work ${prefix}riscv.vhd
 vcom -93 -work work ${prefix}crc.vhd
 vcom -93 -work work ${prefix}stub.vhd
+vcom -93 -work work ${prefix}onewire.vhd
 vcom -93 -work work ${prefix}tb_riscv.vhd
 
 # Start the simulator
@@ -186,10 +187,11 @@ add wave -divider "Inputs"
 add wave            -label clk clk
 add wave            -label areset areset
 add wave -radix hex -label gpioapin gpioapin
-add wave -radix hex -label uart1rxd uart1rxd
+add wave            -label uart1rxd uart1rxd
+add wave            -label onewire1dq onewire1dq
 add wave -divider "Outputs"
 add wave -radix hex -label gpioapout gpioapout
-add wave -radix hex -label uart1txd uart1txd
+add wave            -label uart1txd uart1txd
 add wave            -label timer2oct timer2oct
 add wave            -label timer2icoca timer2icoca
 add wave            -label timer2icocb timer2icocb
@@ -302,6 +304,9 @@ if {[find signal -r */wdt1gen/*] != ""} {
 if {[find signal -r */crcgen/*] != ""} {
     add wave            -label crc_rec dut/crcgen/crc1/crc
 }
+if {[find signal -r */onewire1gen/*] != ""} {
+    add wave            -label onewire1_rec dut/onewire1gen/onewire1/onewire
+ }
 
 # Open Structure and Signals (waveform)
 view structure

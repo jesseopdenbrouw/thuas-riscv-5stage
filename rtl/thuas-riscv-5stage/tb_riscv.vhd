@@ -75,10 +75,12 @@ signal i2c1scl : std_logic;
 signal i2c1sda : std_logic;
 signal i2c2scl : std_logic;
 signal i2c2sda : std_logic;
+signal onewire1dq : std_logic;
 
 -- Set the bit time
 constant bittime : time := (50000000/115200) * 20 ns;
 -- Select character to send
+-- NOTE: THIS IS A 'TO' RANGE! 
 constant chartosend : std_logic_vector := "01000001";
 
 begin
@@ -160,6 +162,8 @@ begin
               HAVE_WDT => TRUE,
               -- Use CRC?
               HAVE_CRC => TRUE,
+              -- Use One-wire
+              HAVE_ONEWIRE1 => TRUE,
               -- UART1 BREAK triggers system reset
               UART1_BREAK_RESETS => false
              )
@@ -197,7 +201,9 @@ begin
               O_timer2oct => timer2oct,
               IO_timer2icoca => timer2icoca,
               IO_timer2icocb => timer2icocb,
-              IO_timer2icocc => timer2icocc
+              IO_timer2icocc => timer2icocc,
+              -- ONEWIRE1
+              IO_onewire1dq => onewire1dq
             );
 
 
@@ -210,11 +216,13 @@ begin
         wait for 10 ns;
     end process;
     
-    -- UART generate
+    -- GPIO/UART/ONEWIRE generate
     process is
     begin
         -- Reset is active high
         areset <= '1';
+        
+        onewire1dq <= 'H';
 
         -- RxD input is idle high
         uart1rxd <= '1';
@@ -257,14 +265,37 @@ begin
         uart1rxd <= '1';
         
         wait;
+        
+        -- Send a byte to the 1-Wire device
+        for i in 7 downto 0 loop
+            if chartosend(i) = '0' then
+                onewire1dq <= '0';
+                wait for 60 us;
+                onewire1dq <= 'H';
+                wait for 62.5 us - 60 us;
+            else
+                onewire1dq <= '0';
+                wait for 6 us;
+                onewire1dq <= 'H';
+                wait for 62.5 us - 6 us;
+            end if;
+        end loop;
+        
+        
+        
+        wait;
     end process;
+
+
+
+
     
     -- Debug generate
     process is
     variable data_from_dtm_v : data_type;
     begin
 
-            -- JTAG
+        -- JTAG
         tck <= '0';
         tms <= '0';
         tdi <= '0';
@@ -338,7 +369,7 @@ begin
         data_from_dtm <= data_from_dtm_v;
         wait for 200 ns;
 
-        -- Write 0xffffffff to 0xf0000004
+        -- Write 0xffffffff to 0xf0000004 (GPIO output)
         -- First set data0 to 0xffffffff
         work.jtag_dmi_pkg.dmi_write(tck, tms, tdi, tdo, "0000100", x"ffffffff");
         wait for 200 ns;
@@ -410,7 +441,7 @@ begin
         work.jtag_dmi_pkg.dmi_write(tck, tms, tdi, tdo, "0010000", x"00000001");
         wait for 200 ns;
         
-        -- Read DM.dmstatus
+        -- Read DM.dmstatus continuously, exit is breakpoint is hit
         wait for 10000 ns;
         loop
             work.jtag_dmi_pkg.dmi_read(tck, tms, tdi, tdo, "0010001", data_from_dtm_v);
@@ -426,7 +457,7 @@ begin
         work.jtag_dmi_pkg.dmi_write(tck, tms, tdi, tdo, "0010000", x"00000001");
         wait for 200 ns;
 
-        -- Read DM.dmstatus
+        -- Read DM.dmstatus continuously, exit is breakpoint is hit
         wait for 10000 ns;
         loop
             work.jtag_dmi_pkg.dmi_read(tck, tms, tdi, tdo, "0010001", data_from_dtm_v);

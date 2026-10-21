@@ -102,7 +102,7 @@ set_location_assignment PIN_AB18 -to O_gpioapout[28]
 set_location_assignment PIN_AA17 -to O_gpioapout[29]
 set_location_assignment PIN_U22 -to O_gpioapout[30]
 
-set_global_assignment -name POWER_DEFAULT_INPUT_IO_TOGGLE_RATE 12.5%
+set_global_assignment -name POWER_DEFAULT_INPUT_IO_TOGGLE_RATE "12.5 %"
 
 
 
@@ -230,6 +230,9 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to I_gpioapin[10]
 set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to O_gpioapout[23]
 set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to O_gpioapout[13]
 set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to O_gpioapout[12]
+set_global_assignment -name ENABLE_LOGIC_ANALYZER_INTERFACE OFF
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to IO_onewire1dq
+set_location_assignment PIN_M21 -to IO_onewire1dq
 set_global_assignment -name VHDL_FILE processor_common.vhd
 set_global_assignment -name VHDL_FILE de0_cv.vhd
 set_global_assignment -name VHDL_FILE riscv.vhd
@@ -253,6 +256,7 @@ set_global_assignment -name VHDL_FILE timerb.vhd
 set_global_assignment -name VHDL_FILE mtime.vhd
 set_global_assignment -name VHDL_FILE msi.vhd
 set_global_assignment -name VHDL_FILE wdt.vhd
+set_global_assignment -name VHDL_FILE onewire.vhd
 set_global_assignment -name VHDL_FILE stub.vhd
 set_global_assignment -name SDC_FILE riscv.sdc
 set_global_assignment -name COMMAND_MACRO_FILE tb_riscv.do

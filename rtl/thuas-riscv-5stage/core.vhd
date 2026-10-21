@@ -115,6 +115,8 @@ entity core is
           HAVE_WDT : boolean;
           -- Use CRC?
           HAVE_CRC : boolean;
+          -- Use one-wire device
+          HAVE_ONEWIRE1 : boolean;
           -- UART1 BREAK triggers system reset
           UART1_BREAK_RESETS : boolean
          );
@@ -771,7 +773,7 @@ begin
                         -- JALR
                         when pc_loadoffsetregister =>
                             if control.forwarda = "10" then
-                                a_v := ex_mem.rs1data;
+                                a_v := ex_mem.rs1data;  -- !note: from register RS1, this contains the ALU result
                             elsif control.forwarda = "01" then
                                 a_v := mem_wb.rddata;
                             elsif control.forwarda = "11" then
@@ -895,9 +897,8 @@ begin
         -- Note that I-type, U-type and J-type instructions do NOT have an RS2 field,
         -- so this may give a false positve.
         -- Check if instruction uses RS1 and/or RS2 field
-        -- Commented out: no real performance benefit
-        uses_rs1_v := true; --opcode_v /= "0110111" and opcode_v /= "0010111" and opcode_v /= "1101111" and opcode_v /= "0001111";
-        uses_rs2_v := true; --opcode_v = "0110011" or opcode_v = "0100011" or opcode_v = "1100011";
+        uses_rs1_v := opcode_v /= "0110111" and opcode_v /= "0010111" and opcode_v /= "1101111" and opcode_v /= "0001111";
+        uses_rs2_v := opcode_v = "0110011" or opcode_v = "0100011" or opcode_v = "1100011";
         -- Check for stall
         if id_ex.isload = '1' and id_ex.rd /= "00000" and ((id_ex.rd = rs1_v and uses_rs1_v) or (id_ex.rd = rs2_v and uses_rs2_v)) then
             control.loadhazard <= '1';
@@ -1053,8 +1054,8 @@ begin
                     control.wfi_request <= '0';
                     control.illegal_instruction_decode <= '0';
 
-                    -- If we flush the pipeline, don't execute the instruction
-                    -- Also for use-after-load (load hazard)
+                    -- Flush the ID/EX stage, this is the only stage that is flushed
+                    -- When a use-after load is detected, the ID/EX stage is also flushed
                     if control.flush = '1' then
                         -- Keep default values
                         null;
@@ -1212,19 +1213,31 @@ begin
                                     id_ex.alu_op <= alu_ctz;
                                     id_ex.rd_en <= '1';
                                 -- REV8, extra code in instructionm bit 24 to 20 (== RS2)
-                                elsif func3_v = "101" and func7_v = "0110100" and rs2_v = "11000" and HAVE_ZBB then
+                                elsif func3_v = "101" and func7_v = "0110100" and rs2_v = "11000" and (HAVE_ZBB or HAVE_ZBKB) then
                                     id_ex.alu_op <= alu_rev8;
+                                    id_ex.rd_en <= '1';
+                                -- BREV8 extra code in instructionm bit 24 to 20 (== RS2)
+                                elsif func3_v = "101" and func7_v = "0110100" and rs2_v = "00111" and HAVE_ZBKB then
+                                    id_ex.alu_op <= alu_brev8;
                                     id_ex.rd_en <= '1';
                                 -- ORC.B, extra code in instructionm bit 24 to 20 (== RS2)
                                 elsif func3_v = "101" and func7_v = "0010100" and rs2_v = "00111" and HAVE_ZBB then
                                     id_ex.alu_op <= alu_orcb;
                                     id_ex.rd_en <= '1';
                                 -- RORI
-                                elsif func3_v = "101" and func7_v = "0110000" and HAVE_ZBB then
+                                elsif func3_v = "101" and func7_v = "0110000" and (HAVE_ZBB or HAVE_ZBKB) then
                                     id_ex.alu_op <= alu_rori;
                                     id_ex.rd_en <= '1';
                                     id_ex.imm <= imm_shamt_v;
                                     id_ex.isimm <= '1';
+                                -- ZIP extra code in instructionm bit 24 to 20 (== RS2)
+                                elsif func3_v = "001" and func7_v = "0000100" and rs2_v = "01111" and HAVE_ZBKB then
+                                    id_ex.alu_op <= alu_zip;
+                                    id_ex.rd_en <= '1';
+                                -- UNZIP extra code in instructionm bit 24 to 20 (== RS2)
+                                elsif func3_v = "101" and func7_v = "0000100" and rs2_v = "01111" and HAVE_ZBKB then
+                                    id_ex.alu_op <= alu_unzip;
+                                    id_ex.rd_en <= '1';
                                 else
                                     control.illegal_instruction_decode <= '1';
                                 end if;
@@ -1309,15 +1322,15 @@ begin
                                     id_ex.alu_op <= alu_czeronez;
                                     id_ex.rd_en <= '1';
                                 -- ANDN
-                                elsif func3_v = "111" and func7_v = "0100000" and HAVE_ZBB then
+                                elsif func3_v = "111" and func7_v = "0100000" and (HAVE_ZBB or HAVE_ZBKB) then
                                     id_ex.alu_op <= alu_andn;
                                     id_ex.rd_en <= '1';
                                 -- ORN
-                                elsif func3_v = "110" and func7_v = "0100000" and HAVE_ZBB then
+                                elsif func3_v = "110" and func7_v = "0100000" and (HAVE_ZBB or HAVE_ZBKB) then
                                     id_ex.alu_op <= alu_orn;
                                     id_ex.rd_en <= '1';
                                 -- XNOR
-                                elsif func3_v = "100" and func7_v = "0100000" and HAVE_ZBB then
+                                elsif func3_v = "100" and func7_v = "0100000" and (HAVE_ZBB or HAVE_ZBKB) then
                                     id_ex.alu_op <= alu_xnor;
                                     id_ex.rd_en <= '1';
                                 -- ZEXT.H, extra code in instructionm bit 24 to 20 (== RS2)
@@ -1343,12 +1356,20 @@ begin
                                     id_ex.rd_en <= '1';
                                     id_ex.isunsigned <= '1';
                                 -- ROL
-                                elsif func3_v = "001" and func7_v = "0110000" and HAVE_ZBB then
+                                elsif func3_v = "001" and func7_v = "0110000" and (HAVE_ZBB or HAVE_ZBKB) then
                                     id_ex.alu_op <= alu_rol;
                                     id_ex.rd_en <= '1';
                                 -- ROR
-                                elsif func3_v = "101" and func7_v = "0110000" and HAVE_ZBB then
+                                elsif func3_v = "101" and func7_v = "0110000" and (HAVE_ZBB or HAVE_ZBKB) then
                                     id_ex.alu_op <= alu_ror;
+                                    id_ex.rd_en <= '1';
+                                -- PACK
+                                elsif func3_v = "100" and func7_v = "0000100" and HAVE_ZBKB then
+                                    id_ex.alu_op <= alu_pack;
+                                    id_ex.rd_en <= '1';
+                                -- PACKH
+                                elsif func3_v = "111" and func7_v = "0000100" and HAVE_ZBKB then
+                                    id_ex.alu_op <= alu_packh;
                                     id_ex.rd_en <= '1';
                                     -- Multiply, divide, remainder
                                 elsif func7_v = "0000001" then
@@ -1780,17 +1801,17 @@ begin
                 r_v := a_v xor b_v;
                 valid_v := '1';
             when alu_andn =>
-                if HAVE_ZBB then
+                if HAVE_ZBB or HAVE_ZBKB then
                     r_v := a_v and not b_v;
                     valid_v := '1';
                 end if;
             when alu_orn =>
-                if HAVE_ZBB then
+                if HAVE_ZBB or HAVE_ZBKB then
                     r_v := a_v or not b_v;
                     valid_v := '1';
                 end if;
             when alu_xnor =>
-                if HAVE_ZBB then
+                if HAVE_ZBB or HAVE_ZBKB then
                     r_v := a_v xor not b_v;
                     valid_v := '1';
                 end if;
@@ -1888,7 +1909,7 @@ begin
             -- Shift left, rotate_left
             when alu_sll | alu_slli | alu_rol =>
                 signs_v := all_zeros_c;
-                if HAVE_ZBB then
+                if HAVE_ZBB or HAVE_ZBKB then
                     if id_ex.alu_op = alu_rol then
                         signs_v := a_v;
                     end if;
@@ -1918,7 +1939,7 @@ begin
             when alu_sra | alu_srai | alu_srl | alu_srli | alu_ror | alu_rori =>
                 if id_ex.alu_op = alu_srl or id_ex.alu_op = alu_srli then
                     signs_v := all_zeros_c;
-                elsif (id_ex.alu_op = alu_ror or id_ex.alu_op = alu_rori) and HAVE_ZBB then
+                elsif (id_ex.alu_op = alu_ror or id_ex.alu_op = alu_rori) and (HAVE_ZBB  or HAVE_ZBKB) then
                     signs_v := a_v;
                 else
                     signs_v := (others => a_v(a_v'left));
@@ -1947,9 +1968,41 @@ begin
 
             -- REV8
             when alu_rev8 =>
-                if HAVE_ZBB then
+                if HAVE_ZBB or HAVE_ZBKB then
                     r_v := a_v(7 downto 0) & a_v(15 downto 8) & a_v(23 downto 16) & a_v(31 downto 24);
                     valid_v := '1';
+                end if;
+
+            -- BREV8
+            when alu_brev8 =>
+                if HAVE_ZBKB then
+                    r_v := bit_reverse(a_v(31 downto 24)) & bit_reverse(a_v(23 downto 16)) & bit_reverse(a_v(15 downto 8)) & bit_reverse(a_v(7 downto 0));
+                end if;
+            -- PACK
+            when alu_pack =>
+                if HAVE_ZBKB then
+                    r_v := b_v(15 downto 0) & a_v(15 downto 0);
+                end if;
+            -- PACKH
+            when alu_packh =>
+                if HAVE_ZBKB then
+                    r_v(15 downto 0) := b_v(7 downto 0) & a_v(7 downto 0);
+                end if;
+            -- ZIP
+            when alu_zip =>
+                if HAVE_ZBKB then
+                    for i in 0 to 15 loop
+                        r_v(2*i)   := a_v(i);
+                        r_v(2*i+1) := a_v(16+i);
+                    end loop;
+                end if;
+            -- UNZIP
+            when alu_unzip =>
+                if HAVE_ZBKB then
+                    for i in 0 to 15 loop
+                        r_v(i)    := a_v(2*i);
+                        r_v(16+i) := a_v(2*i+1);
+                    end loop;
                 end if;
 
             -- Counting bits
@@ -1968,7 +2021,7 @@ begin
                     r_v := count_trailing_zeros(a_v);
                     valid_v := '1';
                 end if;
-                
+
             -- Sign/zero extension
             when alu_sextb =>
                 if HAVE_ZBB then
@@ -2264,7 +2317,7 @@ begin
         begin
             -- Check if forwarding result is needed
             if control.forwarda = "10" then
-                a_v := ex_mem.rs1data; -- !note: from register RS1
+                a_v := ex_mem.rs1data; -- !note: from register RS1, this contains the ALU result
             elsif control.forwarda = "01" then
                 a_v := mem_wb.rddata;
             elsif control.forwarda = "11" then
@@ -2274,7 +2327,7 @@ begin
             end if;
 
             if control.forwardb = "10" then
-                b_v := ex_mem.rs1data; -- !note: from register RS1
+                b_v := ex_mem.rs1data; -- !note: from register RS1, this contains the ALU result
             elsif control.forwardb = "01" then
                 b_v := mem_wb.rddata;
             elsif control.forwardb = "11" then
@@ -2349,7 +2402,7 @@ begin
         begin
             -- Check if forwarding result is needed
             if control.forwarda = "10" then
-                a_v := ex_mem.rs1data; -- !note: from register RS1
+                a_v := ex_mem.rs1data; -- !note: from register RS1, this contains the ALU result
             elsif control.forwarda = "01" then
                 a_v := mem_wb.rddata;
             elsif control.forwarda = "11" then
@@ -2359,7 +2412,7 @@ begin
             end if;
 
             if control.forwardb = "10" then
-                b_v := ex_mem.rs1data; -- !note: from register RS1
+                b_v := ex_mem.rs1data; -- !note: from register RS1, this contains the ALU result
             elsif control.forwardb = "01" then
                 b_v := mem_wb.rddata;
             elsif control.forwardb = "11" then
@@ -2494,7 +2547,7 @@ begin
     process (control, id_ex, ex_mem, mem_wb, wb_bp) is
     begin
         if control.forwarda = "10" then
-            csr_access.data_to_csr <= ex_mem.rs1data;
+            csr_access.data_to_csr <= ex_mem.rs1data; -- !note: from register RS1, this contains the ALU result
         elsif control.forwarda = "01" then
             csr_access.data_to_csr <= mem_wb.rddata;
         elsif control.forwarda = "11" then
@@ -2907,7 +2960,7 @@ begin
     -- Custom read-only hardware description
     csr_reg.mxhw(00) <= '1'; -- GPIOA, always present
     csr_reg.mxhw(01) <= '0'; -- reserved
-    csr_reg.mxhw(02) <= '0'; --boolean_to_std_logic(HAVE_ZBKB);
+    csr_reg.mxhw(02) <= boolean_to_std_logic(HAVE_ZBKB);
     csr_reg.mxhw(03) <= '0'; --boolean_to_std_logic(FAST_MEM);
     csr_reg.mxhw(04) <= boolean_to_std_logic(HAVE_UART1);
     csr_reg.mxhw(05) <= boolean_to_std_logic(HAVE_UART2);
@@ -2917,7 +2970,7 @@ begin
     csr_reg.mxhw(09) <= boolean_to_std_logic(HAVE_SPI2);
     csr_reg.mxhw(10) <= boolean_to_std_logic(HAVE_TIMER1);
     csr_reg.mxhw(11) <= boolean_to_std_logic(HAVE_TIMER2);
-    csr_reg.mxhw(12) <= '0'; -- reserved
+    csr_reg.mxhw(12) <= boolean_to_std_logic(HAVE_ONEWIRE1);
     csr_reg.mxhw(13) <= '0'; -- reserved
     csr_reg.mxhw(14) <= '0'; -- reserved
     csr_reg.mxhw(15) <= '1'; -- TIME/TIMEH, always present
@@ -3040,7 +3093,7 @@ begin
             control.trap_request <= '1';
             control.trap_mcause <= std_logic_vector(to_unsigned(20, control.trap_mcause'length));
             control.trap_mcause(31) <= '1';
-        -- Currently unassigned
+        -- UART2
         elsif I_intrio(19) = '1' and csr_reg.mstatus(3) = '1' and control.may_interrupt ='1' and control.isstepping = '0' then
             control.trap_request <= '1';
             control.trap_mcause <= std_logic_vector(to_unsigned(19, control.trap_mcause'length));
@@ -3050,7 +3103,7 @@ begin
             control.trap_request <= '1';
             control.trap_mcause <= std_logic_vector(to_unsigned(18, control.trap_mcause'length));
             control.trap_mcause(31) <= '1';
-        -- Currently unassigned
+        -- ONEWIRE1
         elsif I_intrio(17) = '1' and csr_reg.mstatus(3) = '1' and control.may_interrupt ='1' and control.isstepping = '0' then
             control.trap_request <= '1';
             control.trap_mcause <= std_logic_vector(to_unsigned(17, control.trap_mcause'length));
