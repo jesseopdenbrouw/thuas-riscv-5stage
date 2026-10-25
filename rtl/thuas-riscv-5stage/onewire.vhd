@@ -137,6 +137,7 @@ type onewire_type is record
     tcie        : std_logic;                        -- TC interrupt enable
     rcie        : std_logic;                        -- RC interrupt enable
     pcie        : std_logic;                        -- PC interrupt enable
+    onebit      : std_logic;                        -- transmit/receive ont bit (lsb) only
     reset       : std_logic;                        -- Trigger reset activity
     presence    : std_logic;                        -- 1 = presence
     data        : std_logic_vector(7 downto 0);
@@ -203,6 +204,7 @@ begin
             onewire.rcie <= '0';
             onewire.pcie <= '0';
             onewire.reset <= '0';
+            onewire.onebit <= '0';
             onewire.presence <= '0';
             --
             O_mem_response.data <= all_zeros_c;
@@ -229,6 +231,7 @@ begin
                 onewire.rcie <= '0';
                 onewire.pcie <= '0';
                 onewire.reset <= '0';
+                onewire.onebit <= '0';
                 onewire.presence <= '0';
             else
                 if I_mem_request.stb = '1' and isword then
@@ -244,6 +247,7 @@ begin
                             if I_mem_request.data(6) = '1' then
                                 onewire.pc <= '0';
                             end if;
+                            onewire.onebit <= I_mem_request.data(7);
                         elsif I_mem_request.addr(3 downto 2) = "01" then
                             -- Write status register
                             onewire.rc <= I_mem_request.data(3);
@@ -269,6 +273,7 @@ begin
                             O_mem_response.data(3) <= onewire.rcie;
                             O_mem_response.data(4) <= onewire.tcie;
                             O_mem_response.data(6) <= onewire.reset;
+                            O_mem_response.data(7) <= onewire.onebit;
                         elsif I_mem_request.addr(3 downto 2) = "01" then
                             O_mem_response.data(3) <= onewire.rc;
                             O_mem_response.data(4) <= onewire.tc;
@@ -309,7 +314,11 @@ begin
                         elsif onewire.startwr = '1' then
                             onewire.startwr <= '0';
                             onewire.busy <= '1';
-                            onewire.bit_counter <= 0;
+                            if onewire.onebit = '1' then
+                                onewire.bit_counter <= 7;
+                            else
+                                onewire.bit_counter <= 0;
+                            end if;
                             onewire.drive_low <= '1';
                             onewire.timer <= 0;
                             onewire.state <= tx_slot;
@@ -317,7 +326,11 @@ begin
                         elsif onewire.startrv = '1' then
                             onewire.startrv <= '0';
                             onewire.read_reg  <= (others => '0');
-                            onewire.bit_counter <= 0;
+                            if onewire.onebit = '1' then
+                                onewire.bit_counter <= 7;
+                            else
+                                onewire.bit_counter <= 0;
+                            end if;
                             onewire.timer <= 0;
                             onewire.busy <= '1';
                             -- Drive the data line low
