@@ -31,4 +31,5 @@ All dates are in dd.mm.yyyy format.
 | 21-10-2026 | 2.0.0.15 | [...] implement 1-Wire ONEWIRE1 device, implemented Zbkb extension | |
 | 25-10-2026 | 2.0.0.16 | [onewire] support for bit transmission to support scanning the 1-Wire bus for attached devices | |
 | 31-10-2026 | 2.0.0.17 | [onewire] fix reading PCIE bit from control register | |
+| 14-11-2026 | 2.0.0.18 | [gpio/...] implement selectable open-drain outputs | |
 
