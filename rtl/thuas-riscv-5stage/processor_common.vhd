@@ -45,7 +45,7 @@ use ieee.numeric_std.all;
 package processor_common is
 
     -- Hardware version, BCD encoded
-    constant HW_VERSION : integer := 16#02_00_00_17#;
+    constant HW_VERSION : integer := 16#02_00_00_18#;
 
     
     -- Used data types
@@ -507,8 +507,10 @@ package processor_common is
                   IO_HIGH_NIBBLE : memory_high_nibble;
                   -- Buffer I/O response
                   BUFFER_IO_RESPONSE : boolean;
-                  -- Fast memory access (severly reduces Fmax)?
+                  -- Fast memory access
                   FAST_MEM : boolean;
+                  -- GPIOA can have open drain outputs
+                  GPIO_OPENDRAIN : boolean;
                   -- Do we have UART1?
                   HAVE_UART1 : boolean;
                   -- Do we have UART1?
