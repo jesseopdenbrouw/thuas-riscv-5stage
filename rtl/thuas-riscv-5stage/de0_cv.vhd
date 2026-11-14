@@ -148,7 +148,7 @@ begin
               -- Fast memory access (severly reduces Fmax)?
               FAST_MEM => false,                         -- not implemented
               -- GPIOA can have open drain outputs
-              GPIO_OPENDRAIN => TRUE,
+              GPIO_OPENDRAIN => false,
               -- Use UART1?
               HAVE_UART1 => TRUE,
               -- Use UART2?
