@@ -62,6 +62,26 @@ and the generic memory module
 are adapted. All other entities are the same as
 with the 3-stage pipelined SoC (notebly the I/O).
 
+== Synthesis Results
+
+.FPGA resource utilization for the DE0-CV board (Slow 1100mV 85C model, v2.0.1.0).
+[[tab_metrics]]
+[cols="1,1,1,1]
+|===
+| Setup | $f_{max}$ | ALMs | FFs | RAM
+
+| Default OCD (all I/O, MD, no extensions, no boot)  | 77 | 3444 | 3470 | 1,313,792
+| Default OCD + perf. options                        | 87 | 4303 | 4509 | 1,313,792
+| Full OCD (all extensions, no boot)                 | 68 | 3788 | 3416 | 1,313,792
+| Default bootloader (no OCD)                        | 70 | 2841 | 2924 | 1,345,536
+| Small (UART1, no boot, no MD, no OCD)              | 74 | 1651 | 1352 | 788,480 
+|===
+
+Note: GPIOA and TIME are always included. +
+Note: UART2 is never included. +
+Note: GPIO_OPENDRAIN set to false. +
+Performance options: Performance Aggressive.
+
 == Notes
 
 Please note the following:

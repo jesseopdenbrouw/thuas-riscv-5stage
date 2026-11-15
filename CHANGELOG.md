@@ -32,4 +32,5 @@ All dates are in dd.mm.yyyy format.
 | 25-10-2026 | 2.0.0.16 | [onewire] support for bit transmission to support scanning the 1-Wire bus for attached devices | |
 | 31-10-2026 | 2.0.0.17 | [onewire] fix reading PCIE bit from control register | |
 | 14-11-2026 | 2.0.0.18 | [gpio/...] implement selectable open-drain outputs | |
+| 15-11-2026 | *2.0.1*  | New version | |
 
